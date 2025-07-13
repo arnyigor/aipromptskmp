@@ -1,3 +1,5 @@
+package com.arny.aiprompts
+
 import io.ktor.client.engine.cio.CIO
 import io.ktor.client.plugins.defaultRequest
 import org.nirmato.ollama.api.ChatRequest.Companion.chatRequest
@@ -9,7 +11,7 @@ class OllamaApi {
 
     // 1. Используем правильный класс клиента из библиотеки nirmato.
     // Конструктор по умолчанию уже настроен на http://localhost:11434
-    val ollamaClient = OllamaClient(CIO) {
+    private val ollamaClient = OllamaClient(CIO) {
         httpClient {
             // ktor HttpClient configurations
             defaultRequest {

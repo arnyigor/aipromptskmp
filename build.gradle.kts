@@ -1,51 +1,110 @@
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 
 plugins {
-    kotlin("jvm")
-    id("org.jetbrains.compose")
-    id("org.jetbrains.kotlin.plugin.compose")
-    // Добавляем плагин для сериализации, он необходим для работы с JSON
-    id("org.jetbrains.kotlin.plugin.serialization") version "1.9.23"
+    alias(libs.plugins.androidApplication)
+    alias(libs.plugins.jetbrainsCompose)
+    alias(libs.plugins.kotlinMultiplatform)
+    alias(libs.plugins.kotlinSerialization)
+    alias(libs.plugins.composeCompiler)
 }
 
-group = "com.arny.aipromptskmp"
-version = "1.0-SNAPSHOT"
+kotlin {
+    androidTarget {
+        compilations.all {
+            kotlinOptions.jvmTarget = "1.8"
+            compilerOptions.configure {
+                freeCompilerArgs.add("-Xexpect-actual-classes")
+            }
+        }
+    }
 
-repositories {
-    mavenCentral()
-    maven("https://maven.pkg.jetbrains.space/public/p/compose/dev")
-    google()
+    jvm("desktop"){
+        compilations.all {
+            compilerOptions.configure {
+                freeCompilerArgs.add("-Xexpect-actual-classes")
+            }
+        }
+    }
+
+
+    sourceSets {
+        val commonMain by getting {
+            dependencies {
+                // Весь общий UI и логика Compose
+                implementation(compose.runtime)
+                implementation(compose.foundation)
+                implementation(compose.material)
+                implementation(compose.ui)
+                @OptIn(org.jetbrains.compose.ExperimentalComposeLibrary::class)
+                implementation(compose.components.resources)
+
+                // Общие библиотеки, которые являются настоящими KMP
+                implementation(libs.kotlin.coroutines.core)
+                implementation(libs.kotlin.serialization.json)
+            }
+        }
+
+        val androidMain by getting {
+            // Зависимости только для Android
+            dependencies {
+                implementation(libs.androidx.core.ktx)
+                implementation(libs.androidx.appcompat)
+                implementation(libs.androidx.activity.compose)
+            }
+        }
+
+        val desktopMain by getting {
+            // Зависимости только для Desktop, включая Ktor и Ollama
+            dependencies {
+                implementation(compose.desktop.currentOs)
+
+                // Ktor и Ollama теперь живут здесь, так как используются только на Desktop
+                implementation(project.dependencies.platform(libs.ktor.bom))
+                implementation(libs.ktor.client.core)
+                implementation(libs.ktor.client.content.negotiation)
+                implementation(libs.ktor.serialization.kotlinx.json)
+                implementation(libs.ktor.client.cio) // Движок для Desktop
+                implementation(libs.nirmato.ollama.client)
+            }
+        }
+    }
+
 }
 
-// Определяем версию Ktor в одном месте
-val ktorVersion = "3.1.3"
+android {
+    namespace = "com.arny.aipromptskmp"
+    compileSdk = 35
 
-dependencies {
-    // Note, if you develop a library, you should use compose.desktop.common.
-    // compose.desktop.currentOs should be used in launcher-sourceSet
-    // (in a separate module for demo project and in testMain).
-    // With compose.desktop.common you will also lose @Preview functionality
-    implementation(compose.desktop.currentOs)
-    // Клиентская библиотека для Ollama. Ваша версия 0.2.0 - отличный выбор.
-    implementation("org.nirmato.ollama:nirmato-ollama-client-ktor:0.2.0")
+    defaultConfig {
+        applicationId = "com.arny.aipromptskmp.android"
+        minSdk = 24
+        //noinspection OldTargetApi
+        targetSdk = 35
+        versionCode = 1
+        versionName = "1.0.0"
+    }
 
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_1_8
+        targetCompatibility = JavaVersion.VERSION_1_8
+    }
 
-    // --- Правильные и согласованные зависимости Ktor ---
-    // 1. Используем Bill of Materials (BOM) для Ktor 3.1.3
-    implementation(platform("io.ktor:ktor-bom:$ktorVersion"))
+    packaging {
+        resources.excludes.add("/META-INF/{AL2.0,LGPL2.1}")
+    }
 
-    // 2. Добавляем нужные модули Ktor БЕЗ УКАЗАНИЯ ВЕРСИИ
-    implementation("io.ktor:ktor-client-cio")
-    implementation("io.ktor:ktor-client-content-negotiation")
-    implementation("io.ktor:ktor-serialization-kotlinx-json")
+    buildFeatures {
+        buildConfig = true
+        viewBinding = true
+        compose = true
+    }
 }
 
 compose.desktop {
     application {
         mainClass = "MainKt"
-
         nativeDistributions {
-            targetFormats(TargetFormat.Dmg, TargetFormat.Exe)
+            targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Exe)
             packageName = "AiPrompsKMP"
             packageVersion = "1.0.0"
         }
