@@ -13,7 +13,7 @@ class SettingsRepositoryImpl : ISettingsRepository {
     }
 
     override fun getApiKey(): String? {
-        return "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"
+        return ""
     }
 
     override fun setSelectedModelId(id: String?) {
