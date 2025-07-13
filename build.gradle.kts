@@ -38,9 +38,19 @@ kotlin {
                 @OptIn(org.jetbrains.compose.ExperimentalComposeLibrary::class)
                 implementation(compose.components.resources)
 
-                // Общие библиотеки, которые являются настоящими KMP
+                // Мультиплатформенные библиотеки
                 implementation(libs.kotlin.coroutines.core)
                 implementation(libs.kotlin.serialization.json)
+
+                // --- ГЛАВНОЕ ИСПРАВЛЕНИЕ ---
+                // 1. Применяем BOM здесь, чтобы он действовал на все Ktor-зависимости.
+                implementation(project.dependencies.platform(libs.ktor.bom))
+
+                // 2. Теперь эти KMP-совместимые зависимости Ktor получат версию из BOM.
+                implementation(libs.ktor.client.core)
+                implementation(libs.ktor.client.content.negotiation)
+                implementation(libs.ktor.client.logging)
+                implementation(libs.ktor.serialization.kotlinx.json)
             }
         }
 
@@ -50,6 +60,10 @@ kotlin {
                 implementation(libs.androidx.core.ktx)
                 implementation(libs.androidx.appcompat)
                 implementation(libs.androidx.activity.compose)
+                implementation(libs.kotlinx.coroutines.android)
+                // Добавляем только специфичный для Android движок Ktor.
+                // Версию он получит из BOM, примененной в commonMain.
+                implementation(libs.ktor.client.okhttp)
             }
         }
 
@@ -65,6 +79,8 @@ kotlin {
                 implementation(libs.ktor.serialization.kotlinx.json)
                 implementation(libs.ktor.client.cio) // Движок для Desktop
                 implementation(libs.nirmato.ollama.client)
+
+                implementation(libs.kotlinx.coroutines.swing) // Предоставляет Dispatchers.Main для Desktop (AWT/Swing)
             }
         }
     }
