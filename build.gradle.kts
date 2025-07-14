@@ -65,6 +65,7 @@ kotlin {
                 implementation(libs.androidx.core.ktx)
                 implementation(libs.androidx.appcompat)
                 implementation(libs.androidx.activity.compose)
+                implementation(libs.androidx.material.icons)
                 implementation(libs.kotlinx.coroutines.android)
                 // Добавляем только специфичный для Android движок Ktor.
                 // Версию он получит из BOM, примененной в commonMain.
