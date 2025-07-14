@@ -1,7 +1,6 @@
 package com.arny.aiprompts.di
 
 import IOpenRouterRepository
-import com.arny.aiprompts.utils.StringProvider
 import com.arny.aiprompts.interactors.ILLMInteractor
 import com.arny.aiprompts.interactors.LLMInteractor
 import com.arny.aiprompts.repositories.*
@@ -15,7 +14,7 @@ object DI {
     // --- РЕПОЗИТОРИИ ---
     // Используем by lazy, чтобы они создавались только при первом обращении
     private val openRouterRepository: IOpenRouterRepository by lazy {
-        OpenRouterRepository(httpClient)
+        OpenRouterRepositoryImpl(httpClient)
     }
     private val chatHistoryRepository: IChatHistoryRepository by lazy {
         ChatHistoryRepositoryImpl()

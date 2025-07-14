@@ -5,12 +5,15 @@ kotlin = "2.1.21"
 kotlinx-coroutines = "1.8.0"
 kotlinx-serialization-json = "1.6.3"
 
+#koin
+koin = "4.0.4"
+
 # Compose
 compose = "1.8.2"
 compose-compiler = "1.5.11" # Версия компилятора, совместимая с Kotlin 1.9.23/2.x.x
 
 # Android
-android-gradle-plugin = "8.2.2"
+android-gradle-plugin = "8.11.1"
 android-appcompat = "1.6.1"
 android-core-ktx = "1.12.0"
 android-activity-compose = "1.8.2"
@@ -24,6 +27,11 @@ nirmato-ollama = "0.2.0"
 kotlin-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinx-coroutines" }
 kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "kotlinx-coroutines" }
 kotlinx-coroutines-swing = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-swing", version.ref = "kotlinx-coroutines" }
+
+# Ktor
+koin-core = { module = "io.insert-koin:koin-core", version.ref = "koin" }
+koin-compose = { module = "io.insert-koin:koin-compose", version.ref = "koin" }
+koin-compose-viewmodel = { module = "io.insert-koin:koin-compose-viewmodel", version.ref = "koin" }
 
 # Ktor (BOM импортирует все согласованные версии)
 ktor-bom = { module = "io.ktor:ktor-bom", version.ref = "ktor" }

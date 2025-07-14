@@ -14,7 +14,7 @@ import kotlinx.serialization.Serializable
 @Serializable data class OpenRouterModelsResponse(val data: List<ModelDTO>)
 @Serializable data class ChatCompletionRequest(val model: String, val messages: List<Message>)
 
-class OpenRouterRepository(private val httpClient: HttpClient) : IOpenRouterRepository {
+class OpenRouterRepositoryImpl(private val httpClient: HttpClient) : IOpenRouterRepository {
 
     private val _modelsFlow = MutableStateFlow<List<LlmModel>>(emptyList())
 

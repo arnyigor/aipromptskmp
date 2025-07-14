@@ -5,7 +5,14 @@ import com.arny.aiprompts.models.LlmModel
 import com.arny.aiprompts.results.DataResult
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.cancel
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onCompletion
+import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.onStart
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 // Единый класс состояния для всего экрана
@@ -25,7 +32,6 @@ data class LlmUiState(
 
 class LlmViewModel(
     private val llmInteractor: ILLMInteractor,
-    // Мы будем передавать scope извне, чтобы управлять его жизненным циклом
     private val viewModelScope: CoroutineScope
 ) {
     private val _uiState = MutableStateFlow(LlmUiState())

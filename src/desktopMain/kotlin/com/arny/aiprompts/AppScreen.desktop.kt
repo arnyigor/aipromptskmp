@@ -10,17 +10,16 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.arny.aiprompts.di.DI
 import com.arny.aiprompts.models.LlmModel
 import com.arny.aiprompts.results.DataResult
 import com.arny.aiprompts.ui.LlmUiState
 import com.arny.aiprompts.ui.LlmViewModel
+import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
 @Preview
 actual fun AppScreen() {
-    val coroutineScope = rememberCoroutineScope()
-    val viewModel = remember { LlmViewModel(DI.llmInteractor, coroutineScope) }
+    val viewModel: LlmViewModel = koinViewModel()
     val state by viewModel.uiState.collectAsState()
 
     // DisposableEffect гарантирует, что onCleared будет вызван, когда Composable уйдет с экрана
