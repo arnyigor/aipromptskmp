@@ -9,7 +9,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         // Здесь мы вызываем общую Composable-функцию, определенную в commonMain
         setContent {
-            AppScreen()
+            com.arny.aiprompts.screens.AppScreen()
         }
     }
 }

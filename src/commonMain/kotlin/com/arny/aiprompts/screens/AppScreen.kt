@@ -1,4 +1,4 @@
-package com.arny.aiprompts
+package com.arny.aiprompts.screens
 
 import androidx.compose.runtime.Composable
 
