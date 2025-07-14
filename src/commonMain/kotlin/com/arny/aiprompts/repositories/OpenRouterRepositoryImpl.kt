@@ -8,11 +8,6 @@ import io.ktor.http.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.serialization.Serializable
-
-// Необходимые data-классы для парсинга JSON
-@Serializable data class OpenRouterModelsResponse(val data: List<ModelDTO>)
-@Serializable data class ChatCompletionRequest(val model: String, val messages: List<Message>)
 
 class OpenRouterRepositoryImpl(private val httpClient: HttpClient) : IOpenRouterRepository {
 

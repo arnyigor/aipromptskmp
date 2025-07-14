@@ -14,7 +14,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import org.koin.dsl.module
 import org.koin.core.context.GlobalContext.startKoin
-import org.koin.compose.viewmodel.dsl.viewModel
+import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.KoinAppDeclaration
 
 val appModule = module {
@@ -38,7 +38,7 @@ val appModule = module {
     }
 
     // 4. Регистрируем ViewModel. viewModelOf здесь должен работать без проблем.
-    factory {
+    viewModel {
         LlmViewModel(
             llmInteractor = get(),
             // Создаем и передаем scope, который будет жить вместе с этим экземпляром ViewModel

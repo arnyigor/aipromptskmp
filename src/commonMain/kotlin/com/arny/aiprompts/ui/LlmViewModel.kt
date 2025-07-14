@@ -1,18 +1,12 @@
 package com.arny.aiprompts.ui
 
+import androidx.lifecycle.ViewModel
 import com.arny.aiprompts.interactors.ILLMInteractor
 import com.arny.aiprompts.models.LlmModel
 import com.arny.aiprompts.results.DataResult
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.cancel
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.launchIn
-import kotlinx.coroutines.flow.onCompletion
-import kotlinx.coroutines.flow.onEach
-import kotlinx.coroutines.flow.onStart
-import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
 // Единый класс состояния для всего экрана
@@ -33,7 +27,7 @@ data class LlmUiState(
 class LlmViewModel(
     private val llmInteractor: ILLMInteractor,
     private val viewModelScope: CoroutineScope
-) {
+) : ViewModel() {
     private val _uiState = MutableStateFlow(LlmUiState())
     val uiState: StateFlow<LlmUiState> = _uiState.asStateFlow()
 
@@ -92,7 +86,7 @@ class LlmViewModel(
     }
 
     // Этот метод нужно будет вызывать при уничтожении ViewModel
-    fun onCleared() {
+    override fun onCleared() {
         viewModelScope.cancel()
     }
 }

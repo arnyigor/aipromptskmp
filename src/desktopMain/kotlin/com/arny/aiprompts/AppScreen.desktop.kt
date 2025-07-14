@@ -22,13 +22,6 @@ actual fun AppScreen() {
     val viewModel: LlmViewModel = koinViewModel()
     val state by viewModel.uiState.collectAsState()
 
-    // DisposableEffect гарантирует, что onCleared будет вызван, когда Composable уйдет с экрана
-    DisposableEffect(Unit) {
-        onDispose {
-            viewModel.onCleared()
-        }
-    }
-
     MaterialTheme {
         // Передаем состояние и обработчики событий в "глупый" Composable
         LlmContent(
