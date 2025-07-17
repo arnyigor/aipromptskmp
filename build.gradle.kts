@@ -1,4 +1,5 @@
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     alias(libs.plugins.androidApplication)
@@ -6,12 +7,14 @@ plugins {
     alias(libs.plugins.kotlinMultiplatform)
     alias(libs.plugins.kotlinSerialization)
     alias(libs.plugins.composeCompiler)
+    alias(libs.plugins.room)
+    alias(libs.plugins.ksp)
 }
 
 kotlin {
     androidTarget {
+        compilerOptions.jvmTarget.set(JvmTarget.JVM_17)
         compilations.all {
-            kotlinOptions.jvmTarget = "1.8"
             compilerOptions.configure {
                 freeCompilerArgs.add("-Xexpect-actual-classes")
             }
@@ -19,6 +22,7 @@ kotlin {
     }
 
     jvm("desktop"){
+        compilerOptions.jvmTarget.set(JvmTarget.JVM_17)
         compilations.all {
             compilerOptions.configure {
                 freeCompilerArgs.add("-Xexpect-actual-classes")
@@ -26,6 +30,9 @@ kotlin {
         }
     }
 
+    room {
+        schemaDirectory("$projectDir/schemas")
+    }
 
     sourceSets {
         val commonMain by getting {
@@ -33,42 +40,49 @@ kotlin {
                 // Весь общий UI и логика Compose
                 implementation(compose.runtime)
                 implementation(compose.foundation)
-                implementation(compose.material)
+                implementation(compose.material3)
                 implementation(compose.ui)
                 @OptIn(org.jetbrains.compose.ExperimentalComposeLibrary::class)
                 implementation(compose.components.resources)
+                implementation(libs.compose.material.icons)
+                implementation(libs.kotlinx.datetime)
 
-                // Мультиплатформенные библиотеки
+                // --- DECOMPOSE ---
+                implementation(libs.decompose)
+                implementation(libs.decompose.extensions.compose)
+
+                // --- КОРОУТИНЫ И СЕРИАЛИЗАЦИЯ ---
                 implementation(libs.kotlin.coroutines.core)
-                implementation(libs.kotlin.serialization.json)
+                implementation(libs.kotlin.serialization.json) // kotlinx.serialization.core подтянется транзитивно
 
-                // --- ГЛАВНОЕ ИСПРАВЛЕНИЕ ---
-                // 1. Применяем BOM здесь, чтобы он действовал на все Ktor-зависимости.
+                // --- KTOR (Общие модули) ---
+                // BOM для Ktor, чтобы управлять версиями движков
                 implementation(project.dependencies.platform(libs.ktor.bom))
-
-                // 2. Теперь эти KMP-совместимые зависимости Ktor получат версию из BOM.
                 implementation(libs.ktor.client.core)
                 implementation(libs.ktor.client.content.negotiation)
                 implementation(libs.ktor.client.logging)
                 implementation(libs.ktor.serialization.kotlinx.json)
 
-                // Koin
+                // --- KOIN ---
                 implementation(libs.koin.core)
                 implementation(libs.koin.compose)
                 implementation(libs.koin.compose.viewmodel)
+
+                implementation(libs.androidx.room.runtime)
+                implementation(libs.sqlite.bundled)
             }
         }
 
         val androidMain by getting {
             // Зависимости только для Android
             dependencies {
+                // Зависимости только для Android
                 implementation(libs.androidx.core.ktx)
                 implementation(libs.androidx.appcompat)
                 implementation(libs.androidx.activity.compose)
-                implementation(libs.androidx.material.icons)
                 implementation(libs.kotlinx.coroutines.android)
-                // Добавляем только специфичный для Android движок Ktor.
-                // Версию он получит из BOM, примененной в commonMain.
+
+                // Движок Ktor для Android
                 implementation(libs.ktor.client.okhttp)
             }
         }
@@ -107,8 +121,8 @@ android {
     }
 
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_1_8
-        targetCompatibility = JavaVersion.VERSION_1_8
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
 
     packaging {
@@ -132,3 +146,5 @@ compose.desktop {
         }
     }
 }
+
+
