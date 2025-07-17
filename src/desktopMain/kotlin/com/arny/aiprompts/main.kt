@@ -6,7 +6,6 @@ import com.arkivanov.decompose.DefaultComponentContext
 import com.arkivanov.essenty.lifecycle.LifecycleRegistry
 import com.arny.aiprompts.di.initKoin
 import com.arny.aiprompts.navigation.DefaultRootComponent
-import com.arny.aiprompts.screens.AppScreen
 import com.arny.aiprompts.ui.RootContent
 
 fun main() = application {

@@ -8,4 +8,5 @@ import androidx.compose.runtime.Composable
  * свою собственную 'actual' реализацию этой функции.
  */
 @Composable
-expect fun AppScreen()
+fun AppScreen() {
+}
