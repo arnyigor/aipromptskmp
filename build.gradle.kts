@@ -63,6 +63,8 @@ kotlin {
                 implementation(libs.ktor.client.logging)
                 implementation(libs.ktor.serialization.kotlinx.json)
 
+                implementation(libs.kermit)
+
                 // --- KOIN ---
                 implementation(libs.koin.core)
                 implementation(libs.koin.compose)
@@ -71,6 +73,9 @@ kotlin {
                 implementation(libs.androidx.room.runtime)
                 implementation(libs.androidx.room.ktx)
                 implementation(libs.sqlite.bundled)
+                implementation(libs.okio)
+
+                implementation(libs.multiplatform.settings.no.arg)
             }
         }
 
@@ -82,6 +87,7 @@ kotlin {
                 implementation(libs.androidx.appcompat)
                 implementation(libs.androidx.activity.compose)
                 implementation(libs.kotlinx.coroutines.android)
+                implementation(libs.androidx.security.crypto)
 
                 // Движок Ktor для Android
                 implementation(libs.ktor.client.okhttp)
@@ -102,6 +108,9 @@ kotlin {
                 implementation(libs.nirmato.ollama.client)
 
                 implementation(libs.kotlinx.coroutines.swing) // Предоставляет Dispatchers.Main для Desktop (AWT/Swing)
+
+                // Добавляем библиотеку для работы с системными хранилищами
+                implementation(libs.keytar.java)
             }
         }
     }
@@ -110,13 +119,13 @@ kotlin {
 
 android {
     namespace = "com.arny.aipromptskmp"
-    compileSdk = 35
+    compileSdk = 34
 
     defaultConfig {
         applicationId = "com.arny.aipromptskmp.android"
         minSdk = 24
         //noinspection OldTargetApi
-        targetSdk = 35
+        targetSdk = 34
         versionCode = 1
         versionName = "1.0.0"
     }

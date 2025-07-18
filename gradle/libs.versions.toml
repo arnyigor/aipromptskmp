@@ -1,14 +1,20 @@
 [versions]
 # Kotlin
 decomposeVersion = "3.4.0-alpha03"
+kermit = "2.0.4"
+keytarJava = "1.0.0"
 kotlin = "2.2.0"
+junit = "4.13.2"
 kotlinx-coroutines = "1.10.2"
 kotlinx-datetime = "0.6.2"
 kotlinx-serialization-json = "1.9.0"
 
+multiplatformSettingsNoArg = "1.1.1"
+okio = "3.9.0"
 room = "2.7.2"
 ksp = "2.2.0-2.0.2"
 sqlite = "2.5.2"
+securityCrypto = "1.0.0"
 
 #koin
 koin = "4.0.4"
@@ -31,11 +37,21 @@ nirmato-ollama = "0.2.0"
 # Coroutines
 decompose = { module = "com.arkivanov.decompose:decompose", version.ref = "decomposeVersion" }
 decompose-extensions-compose = { module = "com.arkivanov.decompose:extensions-compose", version.ref = "decomposeVersion" }
+kermit = { module = "co.touchlab:kermit", version.ref = "kermit" }
+keytar-java = { module = "com.starxg:java-keytar", version.ref = "keytarJava" }
 kotlin-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinx-coroutines" }
 kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "kotlinx-coroutines" }
 kotlinx-coroutines-swing = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-swing", version.ref = "kotlinx-coroutines" }
+
+# --- ТЕСТОВЫЕ БИБЛИОТЕКИ ---
+kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
+kotlin-test-junit = { module = "org.jetbrains.kotlin:kotlin-test-junit", version.ref = "kotlin" }
+junit = { module = "junit:junit", version.ref = "junit" }
+
 androidx-room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "room" }
 androidx-room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = "room" }
+multiplatform-settings-no-arg = { module = "com.russhwolf:multiplatform-settings-no-arg", version.ref = "multiplatformSettingsNoArg" }
+okio = { module = "com.squareup.okio:okio", version.ref = "okio" }
 sqlite-bundled = { module = "androidx.sqlite:sqlite-bundled", version.ref = "sqlite" }
 
 # Ktor
@@ -62,6 +78,7 @@ androidx-appcompat = { module = "androidx.appcompat:appcompat", version.ref = "a
 androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "android-core-ktx" }
 androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "android-activity-compose" }
 compose-material-icons = { module = "org.jetbrains.compose.material:material-icons-extended", version.ref = "icons" }
+androidx-security-crypto = { group = "androidx.security", name = "security-crypto", version.ref = "securityCrypto" }
 
 [plugins]
 # Плагины для блока `plugins` в build.gradle.kts

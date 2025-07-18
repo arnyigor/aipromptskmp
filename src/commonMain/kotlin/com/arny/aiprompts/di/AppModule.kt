@@ -2,20 +2,18 @@ package com.arny.aiprompts.di
 
 import IOpenRouterRepository
 import com.arny.aiprompts.interactors.ILLMInteractor
+import com.arny.aiprompts.interactors.IPromptsInteractor
 import com.arny.aiprompts.interactors.LLMInteractor
-import com.arny.aiprompts.repositories.ChatHistoryRepositoryImpl
-import com.arny.aiprompts.repositories.IChatHistoryRepository
-import com.arny.aiprompts.repositories.ISettingsRepository
-import com.arny.aiprompts.repositories.OpenRouterRepositoryImpl
-import com.arny.aiprompts.repositories.SettingsRepositoryImpl
+import com.arny.aiprompts.interactors.PromptsInteractorImpl
+import com.arny.aiprompts.repositories.*
 import com.arny.aiprompts.ui.LlmViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
-import org.koin.dsl.module
 import org.koin.core.context.GlobalContext.startKoin
 import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.KoinAppDeclaration
+import org.koin.dsl.module
 
 val appModule = module {
     // 1. Регистрируем базовые зависимости
@@ -26,6 +24,11 @@ val appModule = module {
     single<IOpenRouterRepository> { OpenRouterRepositoryImpl(get()) }
     single<IChatHistoryRepository> { ChatHistoryRepositoryImpl() }
     single<ISettingsRepository> { SettingsRepositoryImpl() }
+    // Репозитории
+    single<IPromptsRepository> { PromptsRepositoryImpl(get(), get()) }
+
+    // Интеракторы
+    single<IPromptsInteractor> { PromptsInteractorImpl(get(), get()) }
 
     // 3. Регистрируем интерактор. Здесь все было правильно.
     single<ILLMInteractor> {
@@ -50,6 +53,10 @@ val appModule = module {
 fun initKoin(config: KoinAppDeclaration = {}) {
     startKoin {
         config()
-        modules(appModule)
+        modules(
+            appModule,
+            networkModule,
+            commonModule,
+        )
     }
 }

@@ -8,6 +8,8 @@ import com.arny.aiprompts.features.details.PromptDetailComponent
 import com.arny.aiprompts.features.list.DefaultPromptListComponent
 import com.arkivanov.decompose.router.stack.StackNavigation
 import com.arny.aiprompts.features.list.PromptListComponent
+import com.arny.aiprompts.interactors.IPromptsInteractor
+import org.koin.java.KoinJavaComponent.get
 
 interface RootComponent {
     val childStack: Value<ChildStack<*, Child>>
@@ -22,6 +24,9 @@ interface RootComponent {
 class DefaultRootComponent(
     componentContext: ComponentContext,
 ) : RootComponent, ComponentContext by componentContext {
+
+    // Внедряем интерактор с помощью Koin
+    private val promptsInteractor: IPromptsInteractor = get(IPromptsInteractor::class.java)
 
     private val navigation = StackNavigation<ScreenConfig>()
 
@@ -42,6 +47,7 @@ class DefaultRootComponent(
             is ScreenConfig.PromptList -> RootComponent.Child.List(
                 DefaultPromptListComponent(
                     componentContext = context,
+                    promptsInteractor = promptsInteractor,
                     onNavigateToDetails = { promptId ->
                         // Переход на экран деталей
                         navigation.push(ScreenConfig.PromptDetails(promptId))
