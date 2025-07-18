@@ -6,14 +6,20 @@ import com.arny.aiprompts.interactors.IPromptsInteractor
 import com.arny.aiprompts.interactors.LLMInteractor
 import com.arny.aiprompts.interactors.PromptsInteractorImpl
 import com.arny.aiprompts.repositories.*
-import com.arny.aiprompts.ui.LlmViewModel
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
+import com.arny.aiprompts.sync.PromptSynchronizerImpl
 import org.koin.core.context.GlobalContext.startKoin
-import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.KoinAppDeclaration
 import org.koin.dsl.module
+
+val repositoryModule = module { // Рекомендую вынести в отдельный модуль
+    single<IPromptsRepository> {
+        PromptsRepositoryImpl(
+            promptDao = get(),
+            // Указываем, что сюда нужно внедрить диспатчер с квалификатором IoDispatcher
+            dispatcher = get(qualifier = IoDispatcher)
+        )
+    }
+}
 
 val appModule = module {
     // 1. Регистрируем базовые зависимости
@@ -25,7 +31,7 @@ val appModule = module {
     single<IChatHistoryRepository> { ChatHistoryRepositoryImpl() }
     single<ISettingsRepository> { SettingsRepositoryImpl() }
     // Репозитории
-    single<IPromptsRepository> { PromptsRepositoryImpl(get(), get()) }
+    single<IPromptSynchronizer> { PromptSynchronizerImpl(get(), get(), get(), get(), get()) }
 
     // Интеракторы
     single<IPromptsInteractor> { PromptsInteractorImpl(get(), get()) }
@@ -39,24 +45,20 @@ val appModule = module {
             historyRepository = get()
         )
     }
-
-    // 4. Регистрируем ViewModel. viewModelOf здесь должен работать без проблем.
-    viewModel {
-        LlmViewModel(
-            llmInteractor = get(),
-            // Создаем и передаем scope, который будет жить вместе с этим экземпляром ViewModel
-            viewModelScope = CoroutineScope(Dispatchers.Main.immediate + SupervisorJob())
-        )
-    }
 }
 
 fun initKoin(config: KoinAppDeclaration = {}) {
     startKoin {
         config()
         modules(
+            coroutinesModule,
+            repositoryModule,
             appModule,
             networkModule,
+            daoModule,
+            databaseModule(),
             commonModule,
+            platformModule
         )
     }
 }

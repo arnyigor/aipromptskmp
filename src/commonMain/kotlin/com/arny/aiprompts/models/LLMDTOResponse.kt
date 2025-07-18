@@ -1,32 +1,39 @@
 package com.arny.aiprompts.models
 
-import com.google.gson.annotations.SerializedName
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 
+
+@Serializable
 data class ChatCompletionRequestDTO(
     val model: String,
     val messages: List<MessageDTO>,
-    @SerializedName("max_tokens") val maxTokens: Int? = null,
+    @SerialName("max_tokens") val maxTokens: Int? = null,
     val temperature: Double? = null
 )
 
+@Serializable
 data class MessageDTO(
     val role: String, // "user", "assistant", "system"
     val content: String
 )
 
+@Serializable
 data class ChatCompletionResponseDTO(
     val id: String,
     val choices: List<ChoiceDTO>,
     val usage: UsageDTO?
 )
 
+@Serializable
 data class ChoiceDTO(
     val message: MessageDTO,
-    @SerializedName("finish_reason") val finishReason: String? = null
+    @SerialName("finish_reason") val finishReason: String? = null
 )
 
+@Serializable
 data class UsageDTO(
-    @SerializedName("prompt_tokens") val promptTokens: Int,
-    @SerializedName("completion_tokens")  val completionTokens: Int,
-    @SerializedName("total_tokens") val totalTokens: Int
+    @SerialName("prompt_tokens") val promptTokens: Int,
+    @SerialName("completion_tokens")  val completionTokens: Int,
+    @SerialName("total_tokens") val totalTokens: Int
 )

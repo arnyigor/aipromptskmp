@@ -11,12 +11,12 @@ interface IPromptsRepository {
     suspend fun savePrompts(prompts: List<Prompt>)
     suspend fun getAllPrompts(): Flow<List<Prompt>>
     suspend fun getPrompts(
-        search: String,
-        category: String?,
-        status: String?,
-        tags: List<String>,
-        offset: Int,
-        limit: Int
+        search: String = "",
+        category: String? = null,
+        status: String? = null,
+        tags: List<String> = emptyList(),
+        offset: Int = 0,
+        limit: Int = 20
     ): List<Prompt>
 
     suspend fun deletePromptsByIds(promptIds: List<String>)

@@ -2,8 +2,10 @@ package com.arny.aiprompts.sync
 
 import co.touchlab.kermit.Logger
 import com.arny.aiprompts.api.GitHubService
+import com.arny.aiprompts.mappers.toDomain
 import com.arny.aiprompts.models.GitHubConfig
 import com.arny.aiprompts.models.Prompt
+import com.arny.aiprompts.models.PromptJson
 import com.arny.aiprompts.models.SyncResult
 import com.arny.aiprompts.repositories.IPromptSynchronizer
 import com.arny.aiprompts.repositories.IPromptsRepository
@@ -17,18 +19,43 @@ import okio.FileSystem
 import okio.Path
 import okio.buffer
 
-// Вместо @Inject, зависимости будут предоставляться через Koin-модуль
+import okio.Path.Companion.toPath
+import okio.openZip
+
 class PromptSynchronizerImpl(
     private val githubService: GitHubService,
     private val promptsRepository: IPromptsRepository,
     private val settings: Settings,
-    private val json: Json, // Используем kotlinx.serialization.json
+    private val json: Json,
     private val config: GitHubConfig,
 ) : IPromptSynchronizer {
 
     companion object {
         private const val LAST_SYNC_KEY = "last_sync_timestamp"
         private val log = Logger.withTag("PromptSynchronizer")
+    }
+
+    private fun unzipWithOkio(zipFile: Path, destinationDir: Path) {
+        // "Монтируем" zip-архив как файловую систему
+        val zipFileSystem = FileSystem.SYSTEM.openZip(zipFile)
+
+        // Рекурсивно обходим все файлы в архиве
+        zipFileSystem.listRecursively("/".toPath()).forEach { pathInZip ->
+            val metadata = zipFileSystem.metadata(pathInZip)
+            val targetPath = destinationDir / pathInZip.toString().removePrefix("/")
+
+            if (metadata.isDirectory) {
+                FileSystem.SYSTEM.createDirectories(targetPath)
+            } else {
+                targetPath.parent?.let { FileSystem.SYSTEM.createDirectories(it) }
+                // Копируем файл из виртуальной ФС в реальную
+                zipFileSystem.source(pathInZip).use { source ->
+                    FileSystem.SYSTEM.sink(targetPath).buffer().use { sink ->
+                        sink.writeAll(source)
+                    }
+                }
+            }
+        }
     }
 
     override suspend fun synchronize(): SyncResult = withContext(Dispatchers.IO) {
@@ -53,8 +80,7 @@ class PromptSynchronizerImpl(
 
                 val unzippedDir = tempDir / "unzipped"
                 FileSystem.SYSTEM.createDirectories(unzippedDir)
-                zipFile.unzip(unzippedDir)
-
+                unzipWithOkio(zipFile, unzippedDir)
                 log.i { "Archive unzipped to: $unzippedDir" }
 
                 // 3. Ищем директорию prompts
@@ -132,7 +158,6 @@ class PromptSynchronizerImpl(
     }
 
     private suspend fun handleDeletedPrompts(remotePrompts: List<Prompt>) {
-        // Эта логика остается почти без изменений, так как она работает с репозиторием
         val localPrompts = promptsRepository.getPrompts(limit = Int.MAX_VALUE)
         val remoteIds = remotePrompts.map { it.id }.toSet()
         val idsToDelete = localPrompts
@@ -145,7 +170,10 @@ class PromptSynchronizerImpl(
         }
     }
 
-    override suspend fun getLastSyncTime(): Long? {
-        return settings.getLongOrNull(LAST_SYNC_KEY)
+
+    override suspend fun getLastSyncTime(): Long? = settings.getLongOrNull(LAST_SYNC_KEY)
+
+    override suspend fun setLastSyncTime(timestamp: Long) {
+        settings.putLong(LAST_SYNC_KEY, timestamp)
     }
 }

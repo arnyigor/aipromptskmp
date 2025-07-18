@@ -48,6 +48,8 @@ captures/
 # Файл сервисов Google (содержит приватные ключи)
 google-services.json
 
+schemas/
+
 # Логи и отчеты профилирования
 *.log
 *.hprof

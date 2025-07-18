@@ -1,5 +1,7 @@
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import java.util.Properties
+import java.io.FileInputStream
 
 plugins {
     alias(libs.plugins.androidApplication)
@@ -37,60 +39,68 @@ kotlin {
     sourceSets {
         val commonMain by getting {
             dependencies {
-                // Весь общий UI и логика Compose
+                // Compose (версии от плагина)
                 implementation(compose.runtime)
                 implementation(compose.foundation)
                 implementation(compose.material3)
                 implementation(compose.ui)
+                implementation(libs.compose.material.icons.extended)
                 @OptIn(org.jetbrains.compose.ExperimentalComposeLibrary::class)
                 implementation(compose.components.resources)
-                implementation(libs.compose.material.icons)
+
+                // Kotlinx
                 implementation(libs.kotlinx.datetime)
+                implementation(libs.kotlin.coroutines.core) // ТОЛЬКО -core
+                implementation(libs.kotlin.serialization.json)
 
-                // --- DECOMPOSE ---
-                implementation(libs.decompose)
-                implementation(libs.decompose.extensions.compose)
-
-                // --- КОРОУТИНЫ И СЕРИАЛИЗАЦИЯ ---
-                implementation(libs.kotlin.coroutines.core)
-                implementation(libs.kotlin.serialization.json) // kotlinx.serialization.core подтянется транзитивно
-
-                // --- KTOR (Общие модули) ---
-                // BOM для Ktor, чтобы управлять версиями движков
+                // Decompose, Ktor, Room, Koin-core и т.д.
+                implementation("com.arkivanov.decompose:decompose:${libs.versions.decompose.get()}") {
+                    exclude(group = "org.jetbrains.kotlinx", module = "kotlinx-coroutines-android")
+                }
+                implementation("com.arkivanov.decompose:extensions-compose:${libs.versions.decompose.get()}") {
+                    exclude(group = "org.jetbrains.kotlinx", module = "kotlinx-coroutines-android")
+                }
+                implementation("com.arkivanov.essenty:lifecycle-coroutines:${libs.versions.lifecycle.coroutines.get()}") {
+                    exclude(group = "org.jetbrains.kotlinx", module = "kotlinx-coroutines-android")
+                }
                 implementation(project.dependencies.platform(libs.ktor.bom))
                 implementation(libs.ktor.client.core)
                 implementation(libs.ktor.client.content.negotiation)
                 implementation(libs.ktor.client.logging)
                 implementation(libs.ktor.serialization.kotlinx.json)
 
-                implementation(libs.kermit)
+                implementation("androidx.room:room-runtime:${libs.versions.room.get()}") {
+                    exclude(group = "org.jetbrains.kotlinx", module = "kotlinx-coroutines-android")
+                }
+                implementation("androidx.room:room-ktx:${libs.versions.room.get()}") {
+                    exclude(group = "org.jetbrains.kotlinx", module = "kotlinx-coroutines-android")
+                }
 
-                // --- KOIN ---
-                implementation(libs.koin.core)
-                implementation(libs.koin.compose)
-                implementation(libs.koin.compose.viewmodel)
-
-                implementation(libs.androidx.room.runtime)
-                implementation(libs.androidx.room.ktx)
                 implementation(libs.sqlite.bundled)
+                implementation(libs.kermit)
                 implementation(libs.okio)
-
                 implementation(libs.multiplatform.settings.no.arg)
+                implementation(libs.koin.core)
+                // Объявляем зависимость явно, чтобы можно было применить exclude
+                implementation("io.insert-koin:koin-compose:${libs.versions.koin.get()}") {
+                    exclude(group = "org.jetbrains.kotlinx", module = "kotlinx-coroutines-android")
+                }
             }
         }
 
         val androidMain by getting {
             // Зависимости только для Android
             dependencies {
-                // Зависимости только для Android
                 implementation(libs.androidx.core.ktx)
                 implementation(libs.androidx.appcompat)
                 implementation(libs.androidx.activity.compose)
-                implementation(libs.kotlinx.coroutines.android)
                 implementation(libs.androidx.security.crypto)
 
-                // Движок Ktor для Android
+                // Платформенные реализации
+                implementation(libs.kotlinx.coroutines.android) // ПРАВИЛЬНОЕ МЕСТО
                 implementation(libs.ktor.client.okhttp)
+                implementation(libs.koin.android)
+                implementation(libs.koin.androidx.compose) // Для viewModel()
             }
         }
 
@@ -98,36 +108,42 @@ kotlin {
             // Зависимости только для Desktop, включая Ktor и Ollama
             dependencies {
                 implementation(compose.desktop.currentOs)
-
-                // Ktor и Ollama теперь живут здесь, так как используются только на Desktop
-                implementation(project.dependencies.platform(libs.ktor.bom))
-                implementation(libs.ktor.client.core)
-                implementation(libs.ktor.client.content.negotiation)
-                implementation(libs.ktor.serialization.kotlinx.json)
-                implementation(libs.ktor.client.cio) // Движок для Desktop
+                implementation(libs.keytar.java)
                 implementation(libs.nirmato.ollama.client)
 
-                implementation(libs.kotlinx.coroutines.swing) // Предоставляет Dispatchers.Main для Desktop (AWT/Swing)
-
-                // Добавляем библиотеку для работы с системными хранилищами
-                implementation(libs.keytar.java)
+                // Платформенные реализации
+                implementation(libs.kotlinx.coroutines.swing) // ПРАВИЛЬНОЕ МЕСТО
+                implementation(libs.ktor.client.cio)
             }
         }
     }
 
 }
 
+// Загружаем свойства из local.properties
+val localProperties = Properties()
+val localPropertiesFile = rootProject.file("local.properties")
+if (localPropertiesFile.exists()) {
+    localProperties.load(FileInputStream(localPropertiesFile))
+}
+
 android {
     namespace = "com.arny.aipromptskmp"
-    compileSdk = 34
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "com.arny.aipromptskmp.android"
         minSdk = 24
         //noinspection OldTargetApi
-        targetSdk = 34
+        targetSdk = 35
         versionCode = 1
         versionName = "1.0.0"
+
+        // Передаем значения в BuildConfig для Android
+        buildConfigField("String", "GITHUB_OWNER", "\"${localProperties.getProperty("github.owner")}\"")
+        buildConfigField("String", "GITHUB_REPO", "\"${localProperties.getProperty("github.repo")}\"")
+        buildConfigField("String", "GITHUB_BRANCH", "\"${localProperties.getProperty("github.branch")}\"")
+        buildConfigField("String", "GITHUB_PROMPTS_PATH", "\"${localProperties.getProperty("github.promptsPath")}\"")
     }
 
     compileOptions {
@@ -154,7 +170,22 @@ compose.desktop {
             packageName = "AiPrompsKMP"
             packageVersion = "1.0.0"
         }
+
+        // Передаем свойства как системные проперти при запуске
+        jvmArgs += listOf(
+            "-Dgithub.owner=${localProperties.getProperty("github.owner")}",
+            "-Dgithub.repo=${localProperties.getProperty("github.repo")}",
+            "-Dgithub.branch=${localProperties.getProperty("github.branch")}",
+            "-Dgithub.promptsPath=${localProperties.getProperty("github.promptsPath")}"
+        )
     }
+}
+
+dependencies {
+    // Указываем, что room-compiler - это KSP процессор для каждой цели
+    add("kspCommonMainMetadata", libs.androidx.room.compiler)
+    add("kspAndroid", libs.androidx.room.compiler)
+    add("kspDesktop", libs.androidx.room.compiler)
 }
 
 

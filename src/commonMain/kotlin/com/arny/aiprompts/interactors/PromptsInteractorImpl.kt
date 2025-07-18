@@ -42,5 +42,5 @@ class PromptsInteractorImpl(
 
     override suspend fun synchronize(): SyncResult = synchronizer.synchronize()
 
-    override suspend fun getLastSyncTime(): Long = synchronizer.getLastSyncTime()
+    override suspend fun getLastSyncTime(): Long? = synchronizer.getLastSyncTime()
 }

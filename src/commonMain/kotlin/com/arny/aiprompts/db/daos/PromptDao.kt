@@ -1,11 +1,6 @@
 package com.arny.aiprompts.db.daos
 
-import androidx.room.Dao
-import androidx.room.Insert
-import androidx.room.OnConflictStrategy
-import androidx.room.Query
-import androidx.room.RawQuery
-import androidx.room.Update
+import androidx.room.*
 import com.arny.aiprompts.db.entities.PromptEntity
 import kotlinx.coroutines.flow.Flow
 
@@ -22,10 +17,10 @@ interface PromptDao {
     fun getAllPromptsFlow(): Flow<List<PromptEntity>>
 
     @Query("SELECT * FROM prompts")
-    fun getAllPrompts(): List<PromptEntity>
+    suspend fun getAllPrompts(): List<PromptEntity>
 
     @Query("SELECT _id FROM prompts")
-    fun getAllPromptIds(): List<String>
+    suspend fun getAllPromptIds(): List<String>
 
     @Query("DELETE FROM prompts WHERE _id IN (:ids)")
     suspend fun deletePromptsByIds(ids: List<String>)
@@ -49,7 +44,8 @@ interface PromptDao {
      * ВНИМАНИЕ: Этот запрос может быть медленным при большом количестве тегов в фильтре.
      * Он будет заменен на более простой, если список тегов пуст.
      */
-    @Query("""
+    @Query(
+        """
         SELECT * FROM prompts
         WHERE
             /* 1. Фильтр по поисковому запросу */
@@ -74,7 +70,8 @@ interface PromptDao {
             AND (:tagCondition)
         ORDER BY is_favorite DESC, modified_at DESC
         LIMIT :limit OFFSET :offset
-    """)
+    """
+    )
     suspend fun getPromptsWithTagCondition(
         searchQuery: String,
         category: String?,
@@ -85,7 +82,8 @@ interface PromptDao {
     ): List<PromptEntity>
 
     // Вспомогательный метод для случая, когда тегов нет
-    @Query("""
+    @Query(
+        """
         SELECT * FROM prompts
         WHERE
             (:searchQuery = '' OR 
@@ -105,7 +103,8 @@ interface PromptDao {
             )
         ORDER BY is_favorite DESC, modified_at DESC
         LIMIT :limit OFFSET :offset
-    """)
+    """
+    )
     suspend fun getPromptsWithoutTags(
         searchQuery: String,
         category: String?,

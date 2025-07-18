@@ -1,23 +1,16 @@
 package com.arny.aiprompts.features.list
 
 import com.arkivanov.decompose.ComponentContext
-import com.arkivanov.essenty.lifecycle.doOnDestroy
+import com.arkivanov.essenty.lifecycle.coroutines.coroutineScope
 import com.arny.aiprompts.interactors.IPromptsInteractor
-import com.arny.aiprompts.models.Author
 import com.arny.aiprompts.models.Prompt
-import com.arny.aiprompts.models.PromptContent
-import com.arny.aiprompts.models.PromptMetadata
+import com.arny.aiprompts.models.SyncResult
 import com.arny.aiprompts.ui.prompts.PromptsListState
-import com.arny.aiprompts.utils.toJavaDate
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.datetime.LocalDateTime
 
 interface PromptListComponent {
     val state: StateFlow<PromptsListState>
@@ -37,12 +30,9 @@ class DefaultPromptListComponent(
     private val _state = MutableStateFlow(PromptsListState(isLoading = true))
     override val state: StateFlow<PromptsListState> = _state.asStateFlow()
 
-    private val scope = CoroutineScope(Dispatchers.Main.immediate)
+    private val scope = coroutineScope()
 
     init {
-        lifecycle.doOnDestroy {
-            scope.cancel()
-        }
         // Запускаем синхронизацию и загрузку при создании компонента
         onRefresh()
     }
@@ -72,18 +62,40 @@ class DefaultPromptListComponent(
         }
     }
 
-    // Синхронизация с сервером
-    private fun synchronize() {
+    /**
+     * Синхронизирует данные с сервером.
+     * @param isInitialSync true, если это первая синхронизация, чтобы не показывать ошибку, если нет сети при запуске.
+     */
+    private fun synchronize(isInitialSync: Boolean = false) {
         scope.launch {
-            _state.update { it.copy(isSyncing = true) } // Добавим поле isSyncing в State
-            val result = promptsInteractor.synchronize()
-            _state.update { it.copy(isSyncing = false) }
-            // После синхронизации перезагружаем данные из локальной БД
-            if (result.isSuccess) {
-                loadPrompts()
-            } else {
-                _state.update { it.copy(error = result.errorMessage) }
+            // Показываем индикатор синхронизации (например, для SwipeRefresh)
+            _state.update { it.copy(isSyncing = true, error = null) }
+
+            // Используем when для обработки всех вариантов SyncResult
+            when (val result = promptsInteractor.synchronize()) {
+                is SyncResult.Success -> {
+                    // Данные УЖЕ сохранены в БД синхронизатором.
+                    // Теперь нам нужно просто перезагрузить их в UI.
+                    // Вызываем loadPrompts, чтобы обновить allPrompts и currentPrompts.
+                    loadPrompts()
+                }
+
+                is SyncResult.Error -> {
+                    // Показываем ошибку, только если это не первая "тихая" синхронизация
+                    if (!isInitialSync) {
+                        _state.update { it.copy(error = result.message) }
+                    }
+                }
+
+                is SyncResult.Conflicts -> {
+                    if (!isInitialSync) {
+                        _state.update { it.copy(error = "Обнаружены конфликты синхронизации") }
+                    }
+                }
             }
+
+            // Убираем индикатор синхронизации ПОСЛЕ всех операций
+            _state.update { it.copy(isSyncing = false) }
         }
     }
 

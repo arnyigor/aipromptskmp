@@ -1,5 +1,6 @@
 package com.arny.aiprompts.di
 
+import com.arny.aiprompts.models.GitHubConfig
 import com.russhwolf.settings.Settings
 import org.koin.dsl.module
 
@@ -9,4 +10,5 @@ val commonModule = module {
     single<Settings> {
         get<SettingsFactory>().create(APP_SETTINGS_NAME)
     }
+    single<GitHubConfig> { ConfigProvider.gitHubConfig }
 }

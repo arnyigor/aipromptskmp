@@ -1,10 +1,11 @@
-package com.arny.aiprompts.ui
+package com.arny.aiprompts.features.llm
 
-import androidx.lifecycle.ViewModel
+import com.arkivanov.decompose.ComponentContext
+import com.arkivanov.essenty.lifecycle.coroutines.coroutineScope
+import com.arkivanov.essenty.lifecycle.doOnDestroy
 import com.arny.aiprompts.interactors.ILLMInteractor
 import com.arny.aiprompts.models.LlmModel
 import com.arny.aiprompts.results.DataResult
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -24,44 +25,62 @@ data class LlmUiState(
         }
 }
 
-class LlmViewModel(
-    private val llmInteractor: ILLMInteractor,
-    private val viewModelScope: CoroutineScope
-) : ViewModel() {
+// Интерфейс компонента
+interface LlmComponent {
+    val uiState: StateFlow<LlmUiState>
+
+    fun onPromptChanged(newPrompt: String)
+    fun onModelSelected(modelId: String)
+    fun onGenerateClicked()
+    fun refreshModels()
+}
+
+// Реализация компонента
+class DefaultLlmComponent(
+    componentContext: ComponentContext,
+    private val llmInteractor: ILLMInteractor
+) : LlmComponent, ComponentContext by componentContext {
+
+    // CoroutineScope, привязанный к жизненному циклу компонента (аналог viewModelScope)
+    // Эта функция-расширение создает scope, который автоматически
+    // отменится при уничтожении компонента (onDestroy).
+    private val scope = coroutineScope()
+
     private val _uiState = MutableStateFlow(LlmUiState())
-    val uiState: StateFlow<LlmUiState> = _uiState.asStateFlow()
+    override val uiState: StateFlow<LlmUiState> = _uiState.asStateFlow()
 
     init {
-        // Подписываемся на поток моделей из интерактора ОДИН РАЗ
+        // При уничтожении компонента scope будет отменен
+        lifecycle.doOnDestroy {
+            scope.cancel()
+        }
+
+        // Вся логика из init ViewModel переезжает сюда
         llmInteractor.getModels()
             .onEach { modelsResult ->
                 _uiState.update { it.copy(modelsResult = modelsResult) }
             }
-            .launchIn(viewModelScope)
+            .launchIn(scope)
 
-        // Запускаем первоначальное обновление
         refreshModels()
     }
 
-    // --- ОБРАБОТЧИКИ СОБЫТИЙ ОТ UI ---
-
-    fun onPromptChanged(newPrompt: String) {
+    override fun onPromptChanged(newPrompt: String) {
         _uiState.update { it.copy(prompt = newPrompt) }
     }
 
-    fun onModelSelected(modelId: String) {
-        viewModelScope.launch {
+    override fun onModelSelected(modelId: String) {
+        scope.launch {
             llmInteractor.toggleModelSelection(modelId)
-            // Интерактор обновит источник данных, а наша подписка в init{} получит новый список
         }
     }
 
-    fun onGenerateClicked() {
+    override fun onGenerateClicked() {
         val currentState = _uiState.value
         val selectedModel = currentState.selectedModel ?: return
         if (currentState.isGenerating) return
 
-        viewModelScope.launch {
+        scope.launch {
             llmInteractor.sendMessage(selectedModel.id, currentState.prompt)
                 .onStart {
                     _uiState.update { it.copy(isGenerating = true, responseText = "") }
@@ -79,14 +98,9 @@ class LlmViewModel(
         }
     }
 
-    fun refreshModels() {
-        viewModelScope.launch {
+    override fun refreshModels() {
+        scope.launch {
             llmInteractor.refreshModels()
         }
-    }
-
-    // Этот метод нужно будет вызывать при уничтожении ViewModel
-    override fun onCleared() {
-        viewModelScope.cancel()
     }
 }

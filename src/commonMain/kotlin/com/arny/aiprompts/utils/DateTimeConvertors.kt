@@ -31,6 +31,10 @@ fun LocalDateTime.toJavaDate(): Date {
     return Date(ktxInstant.toEpochMilliseconds())
 }
 
+fun Instant.toJavaDate(): Date {
+    return Date(this.toEpochMilliseconds())
+}
+
 fun LocalDateTime.toInstant(): Instant {
     return this.toInstant(TimeZone.currentSystemDefault())
 }

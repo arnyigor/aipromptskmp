@@ -9,7 +9,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 
-class PromptsRepositoryImpl constructor(
+class PromptsRepositoryImpl(
     private val promptDao: PromptDao,
     private val dispatcher: CoroutineDispatcher
 ) : IPromptsRepository {

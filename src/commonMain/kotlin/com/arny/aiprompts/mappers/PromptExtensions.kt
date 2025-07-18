@@ -2,8 +2,10 @@ package com.arny.aiprompts.mappers
 
 import com.arny.aiprompts.db.entities.PromptEntity
 import com.arny.aiprompts.models.*
+import com.arny.aiprompts.utils.toInstant
 import com.arny.aiprompts.utils.toIsoString
 import com.arny.aiprompts.utils.toJavaDate
+import kotlinx.datetime.Instant
 import kotlinx.datetime.LocalDateTime
 import java.util.*
 
@@ -27,8 +29,8 @@ fun Prompt.toEntity(): PromptEntity = PromptEntity(
     source = metadata.source,
     notes = metadata.notes,
     version = version,
-    createdAt = createdAt?.toIsoString().orEmpty(),
-    modifiedAt = modifiedAt.toIsoString().orEmpty(),
+    createdAt = this.createdAt?.toInstant()?.toString().orEmpty(),
+    modifiedAt = this.modifiedAt?.toInstant()?.toString().orEmpty()
 )
 
 // Entity -> Domain
@@ -57,8 +59,8 @@ fun PromptEntity.toDomain(): Prompt = Prompt(
         notes = notes
     ),
     version = version,
-    createdAt = LocalDateTime.parse(createdAt).toJavaDate(),
-    modifiedAt = LocalDateTime.parse(modifiedAt).toJavaDate(),
+    createdAt = Instant.parse(createdAt).toJavaDate(),
+    modifiedAt = Instant.parse(modifiedAt).toJavaDate(),
 )
 
 // API -> Domain
@@ -88,6 +90,6 @@ fun PromptJson.toDomain(): Prompt = Prompt(
         notes = metadata?.notes.orEmpty()
     ),
     version = version.orEmpty(),
-    createdAt = createdAt?.let { LocalDateTime.parse(it) }?.toJavaDate(),
-    modifiedAt = updatedAt?.let { LocalDateTime.parse(it) }?.toJavaDate()
+    createdAt = createdAt?.let { LocalDateTime.parse(it).toInstant() }?.toJavaDate(),
+    modifiedAt = updatedAt?.let { LocalDateTime.parse(it).toInstant() }?.toJavaDate()
 )

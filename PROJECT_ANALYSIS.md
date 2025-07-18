@@ -1,31 +1,50 @@
-# Анализ проекта AiPromptsKMP
 
-## Технологический стек
-- **Язык**: Kotlin Multiplatform (Android, Desktop)
-- **UI**: Compose Multiplatform
-- **Навигация**: Decompose
-- **DI**: Koin + кастомный DI-контейнер
-- **Сеть**: Ktor + OpenRouter API
-- **Локальное хранилище**: Room/SQLite
-- **Асинхронность**: Kotlin Coroutines
+# Анализ проекта: AiPromptsKMP
 
-## Архитектура
+Этот документ содержит технический анализ кросс-платформенного приложения `AiPromptsKMP`, предназначенного для просмотра и управления промптами.
+
+## 1. Технологический стек и архитектура
+
+Проект построен на современном стеке Kotlin Multiplatform, что обеспечивает единую кодовую базу для бизнес-логики и UI на всех целевых платформах.
+
+### Технологический стек
+- **Язык**: `Kotlin`
+- **Платформы**: `KMP` (Android, Desktop/JVM)
+- **UI**: `Compose Multiplatform`
+- **Асинхронность**: `Kotlin Coroutines` & `Flow`
+- **Навигация**: `Decompose`
+- **Dependency Injection**: `Koin`
+- **Сеть**: `Ktor Client` (взаимодействие с OpenRouter API)
+- **База данных**: `Room KMP` / `SQLite`
+
+### Архитектура
+Приложение следует принципам чистой архитектуры (Clean Architecture), разделяя логику на независимые слои (UI, бизнес-логика, данные). Это обеспечивает высокую тестируемость, масштабируемость и поддерживаемость проекта.
+
 ```mermaid
 graph TD
-    A[UI Layer] --> B[ViewModel]
-    B --> C[Интеракторы]
-    C --> D[Репозитории]
-    D --> E[Внешние API]
-    D --> F[Локальное хранилище]
+    subgraph UI Layer
+        A[Compose UI] --> B[Component/ViewModel];
+    end
+    subgraph Domain Layer
+        B --> C[Интеракторы];
+    end
+    subgraph Data Layer
+        C --> D[Репозитории];
+        D --> E[API (Ktor)];
+        D --> F[БД (Room)];
+    end
 ```
 
 ### Ключевые компоненты
-1. **RootComponent** - корневой компонент навигации
-2. **LLMInteractor** - ядро бизнес-логики
-3. **OpenRouterRepository** - интеграция с LLM API
-4. **PromptListComponent/PromptDetailComponent** - компоненты экранов
+- **`RootComponent`**: Корневой компонент Decompose, управляющий навигационным стеком и жизненным циклом дочерних экранов.
+- **`PromptListComponent` / `PromptDetailComponent`**: Компоненты экранов, аналог ViewModel в KMP, отвечающие за состояние UI и обработку действий пользователя.
+- **`LLMInteractor`**: Ядро бизнес-логики, координирующее взаимодействие между репозиториями и UI.
+- **`OpenRouterRepository`**: Абстракция для работы с внешним LLM API, инкапсулирует логику сетевых запросов.
 
-## Модели данных
+## 2. Модели данных
+
+Основные сущности приложения спроектированы для эффективного хранения и передачи данных между слоями.
+
 ```mermaid
 classDiagram
     class Prompt {
@@ -57,40 +76,42 @@ classDiagram
 
     class ModelDTO {
         +String id
-        +String? name
-        +String? description
-        +Long? contextLength
-        +Long? createdAt
-        +ModelArchitecture? architecture
-        +ModelPricing? pricing
+        +String name
+        +Long contextLength
         +toDomain() LlmModel
     }
 ```
 
-## Workflow бизнес-логики
+## 3. Workflow бизнес-логики
+
+Процессы в приложении организованы через однонаправленный поток данных. Ниже представлен пример workflow для получения списка доступных LLM-моделей.
+
 ```mermaid
 sequenceDiagram
     participant UI as UI Layer
-    participant VM as ViewModel
+    participant Component as Screen Component
     participant Interactor as LLMInteractor
     participant Repository as OpenRouterRepository
     participant API as OpenRouter API
 
-    UI->>VM: Запрос списка моделей
-    VM->>Interactor: getAvailableModels()
+    UI->>Component: Пользователь открывает экран
+    Component->>Interactor: getAvailableModels()
     Interactor->>Repository: refreshModels()
     Repository->>API: GET /api/v1/models
-    API-->>Repository: Модели
-    Repository-->>Interactor: Обновленные модели
-    Interactor-->>VM: Список моделей
-    VM-->>UI: Отображение моделей
+    API-->>Repository: JSON с моделями (DTO)
+    Repository-->>Interactor: Результат (List<LlmModel>)
+    Interactor-->>Component: Обновляет StateFlow с моделями
+    Component-->>UI: StateFlow обновляет UI
 ```
 
-## Зависимости
+## 4. Управление зависимостями
+
+Проект использует современные версии ключевых библиотек, что обеспечивает доступ к последним возможностям и улучшениям производительности.
+
 ```mermaid
 pie
     title Основные зависимости
-    "Kotlin Coroutines" : 25
+    "Kotlin & Coroutines" : 25
     "Compose Multiplatform" : 20
     "Ktor Client" : 15
     "Decompose" : 15
@@ -98,41 +119,58 @@ pie
     "Room/SQLite" : 15
 ```
 
-### Версии зависимостей
-- **Kotlin**: 2.2.0
-- **Compose**: 1.8.2
-- **Ktor**: 3.1.3 (BOM)
-- **Decompose**: 3.4.0-alpha03
-- **Room**: 2.7.2
-- **Koin**: 4.0.4
+### Ключевые версии
+- **Kotlin**: `2.0.0`
+- **Compose Plugin**: `1.6.10`
+- **Ktor**: `2.3.12`
+- **Decompose**: `3.0.0`
+- **Room**: `2.7.0-alpha04`
+- **Koin**: `3.5.6`
 
-## Полная схема компонентов
+> **Примечание**: Использование актуальных версий требует строгого соблюдения [таблицы совместимости](https://github.com/JetBrains/compose-jb/blob/master/VERSIONING.md#kotlin-compatibility) (особенно для связки Kotlin и Compose).
+
+## 5. Схема компонентов и особенности реализации
+
+### Полная схема компонентов
 ```mermaid
 flowchart TD
-    RootComponent --> PromptListComponent
-    RootComponent --> PromptDetailComponent
-    PromptListComponent --> LLMInteractor
-    PromptDetailComponent --> LLMInteractor
-    LLMInteractor --> OpenRouterRepository
-    LLMInteractor --> ChatHistoryRepository
-    OpenRouterRepository --> KtorClient
+    subgraph Navigation
+        A(RootComponent)
+    end
+    subgraph Features
+        B(PromptListComponent)
+        C(PromptDetailComponent)
+    end
+    subgraph Domain
+        D(LLMInteractor)
+    end
+    subgraph Data
+        E(OpenRouterRepository)
+        F(ChatHistoryRepository)
+        G(KtorClient)
+        H(Room DAO)
+    end
+    
+    A --> B & C
+    B & C --> D
+    D --> E & F
+    E --> G
+    F --> H
 ```
 
-## Особенности реализации
-1. **Кроссплатформенный DI**:
-   - Общие зависимости в `commonMain`
-   - Платформенные реализации через expect/actual
-2. **Состояние навигации**:
-   - Сохранение стека через ScreenConfig.serializer()
-   - Чистая архитектура компонентов
-3. **Модели данных**:
-   - Сериализация через kotlinx.serialization
-   - Поддержка мультиязычных промптов
-   - Автоматическое маппинга DTO через ModelDTO.toDomain()
+### Особенности реализации
+- **Кросс-платформенный DI**: Внедрение зависимостей реализовано с помощью `Koin`. Платформенные реализации (например, драйвер БД или безопасное хранилище) предоставляются через механизм `expect/actual`, что позволяет сохранять общий DI-граф в `commonMain`.
+- **Сохраняемое состояние навигации**: Стек навигации Decompose сериализуется с помощью `kotlinx.serialization`, обеспечивая восстановление состояния экрана после закрытия приложения или смены конфигурации.
+- **Чистые модели данных**: Применена строгая граница между DTO (Data Transfer Objects) для сети и доменными моделями. Маппинг происходит на уровне репозитория (например, `ModelDTO.toDomain()`), что изолирует бизнес-логику от деталей реализации API.
 
-## Рекомендации
-1. Добавить кэширование моделей LLM
-2. Реализовать IPromptSynchronizer
-3. Внедрить centralized error handling
-4. Добавить модульное тестирование ключевых компонентов
-5. Внедрить Data Class Validation для моделей
+## 6. Рекомендации и дальнейшие шаги
+
+Для дальнейшего развития проекта рекомендуется сосредоточиться на следующих областях:
+
+1.  **Реализовать кэширование моделей LLM**: Добавить слой кэширования для списка моделей в `OpenRouterRepository` (с использованием `Room`), чтобы сократить количество сетевых запросов и ускорить запуск приложения.
+2.  **Завершить реализацию `IPromptSynchronizer`**: Реализовать логику фоновой синхронизации промптов из Git-репозитория, используя `Ktor` для скачивания и `Okio` для работы с архивом.
+3.  **Создать централизованный механизм обработки ошибок**: Внедрить единый механизм для отлова и обработки исключений на уровне интеракторов или репозиториев, чтобы предоставлять пользователю консистентные и понятные сообщения об ошибках.
+4.  **Покрытие кода тестами**: Начать написание модульных тестов для `Interactor` и `Repository`, используя mock-объекты для сетевых клиентов и DAO.
+5.  **Валидация данных**: Добавить валидацию для DTO на уровне сетевого слоя, чтобы защитить приложение от некорректных или неожиданных данных от API.
+
+---
