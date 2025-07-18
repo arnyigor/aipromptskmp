@@ -19,6 +19,6 @@ data class Prompt(
     val status: String,
     val metadata: PromptMetadata = PromptMetadata(),
     val version: String = "1.0.0",
-    val createdAt: Date = Date(),
-    val modifiedAt: Date = Date()
+    val createdAt: Date? = Date(),
+    val modifiedAt: Date? = Date()
 )
