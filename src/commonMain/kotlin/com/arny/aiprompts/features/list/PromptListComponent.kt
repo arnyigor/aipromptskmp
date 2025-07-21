@@ -61,7 +61,7 @@ class DefaultPromptListComponent(
         // Обновляем ID выбранного элемента для правой панели
         _state.update { it.copy(selectedPromptId = id) }
         // Можно и сразу навигацию делать, если на desktop не нужна правая панель
-        // onNavigateToDetails(id)
+        onNavigateToDetails(id) // Просто вызываем коллбэк, переданный из RootComponent
     }
 
     override fun onFavoriteClicked(id: String) {
@@ -104,7 +104,9 @@ class DefaultPromptListComponent(
     }
 
     override fun onEditPromptClicked() {
-        state.value.selectedPromptId?.let { /* TODO: Навигация на экран редактирования с ID */ }
+        state.value.selectedPromptId?.let {
+
+        }
     }
 
     override fun onDeletePromptClicked() {
@@ -137,7 +139,9 @@ class DefaultPromptListComponent(
             if (!isInitialSync) _state.update { it.copy(isSyncing = true) }
             when (promptsInteractor.synchronize()) {
                 is SyncResult.Success -> loadPrompts()
-                is SyncResult.Skipped -> { /* no-op */ }
+                is SyncResult.Skipped -> { /* no-op */
+                }
+
                 is SyncResult.Error -> if (!isInitialSync) _state.update { it.copy(error = "Ошибка синхронизации") }
                 is SyncResult.Conflicts -> if (!isInitialSync) _state.update { it.copy(error = "Конфликты синхронизации") }
             }

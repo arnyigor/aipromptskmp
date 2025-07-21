@@ -1,8 +1,5 @@
 package com.arny.aiprompts.ui.detail
 
-import androidx.compose.runtime.Composable
-import com.arny.aiprompts.features.details.PromptDetailComponent
-
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.text.selection.SelectionContainer
@@ -10,106 +7,29 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.runtime.collectAsState
-import androidx.compose.ui.platform.LocalClipboardManager
+import com.arny.aiprompts.features.details.PromptDetailComponent
+import com.arny.aiprompts.features.details.PromptDetailEvent
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PromptDetailScreen(component: PromptDetailComponent) {
-    val state by component.state.collectAsState()
-    val clipboardManager = LocalClipboardManager.current
-
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text(state.prompt?.title ?: "Загрузка...", maxLines = 1, overflow = TextOverflow.Ellipsis) },
-                navigationIcon = {
-                    IconButton(onClick = component::onBackClicked) {
-                        // Иконки из icons-extended кросс-платформенные
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Назад")
-                    }
-                },
-                actions = {
-                    state.prompt?.let { prompt ->
-                        IconButton(onClick = { component.onFavoriteClicked() }) {
-                            Icon(
-                                imageVector = if (prompt.isFavorite) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
-                                contentDescription = "В избранное",
-                                tint = if (prompt.isFavorite) MaterialTheme.colorScheme.primary else LocalContentColor.current
-                            )
-                        }
-                    }
-                }
-            )
-        }
-    ) { paddingValues ->
-        // Здесь можно использовать LazyColumn, как я предлагал, или Column + verticalScroll, как у вас.
-        // LazyColumn эффективнее, если секций может быть много.
-        LazyColumn(
-            modifier = Modifier.fillMaxSize().padding(paddingValues),
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            when {
-                state.isLoading -> item { Box(Modifier.fillParentMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() } }
-                state.error != null -> item { ErrorState(state.error.orEmpty(), component::onRefresh) }
-                state.prompt != null -> {
-                    val prompt = state.prompt
-
-                    val ru = prompt?.content?.ru
-                    if (!ru.isNullOrBlank()) {
-                        item {
-                            PromptContentCard(
-                                language = "Русский",
-                                text = ru,
-                                onCopyClick = { clipboardManager.setText(AnnotatedString(ru)) }
-                            )
-                        }
-                    }
-                    val en = prompt?.content?.en
-                    if (!en.isNullOrBlank()) {
-                        item {
-                            PromptContentCard(
-                                language = "English",
-                                text = en,
-                                onCopyClick = { clipboardManager.setText(AnnotatedString(en)) }
-                            )
-                        }
-                    }
-                    val tags = prompt?.tags
-                    if (!tags.isNullOrEmpty()) {
-                        item { TagsSection("Теги", tags) }
-                    }
-                    val compatibleModels = prompt?.compatibleModels
-                    if (!compatibleModels.isNullOrEmpty()) {
-                        item { TagsSection("Совместимые модели", compatibleModels) }
-                    }
-                }
-            }
-        }
-    }
-}
-
-// Вспомогательные Composable для состояний
-@Composable
-fun EmptyState(message: String, modifier: Modifier = Modifier) {
-    Column(
-        modifier = modifier.padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        Text(message, style = MaterialTheme.typography.bodyLarge)
-    }
+    AdaptivePromptDetailLayout(component = component)
 }
 
 @Composable
-fun ErrorState(message: String, onRetry: () -> Unit, modifier: Modifier = Modifier) {
+fun ErrorState(
+    message: String,
+    modifier: Modifier = Modifier,
+    onRetry: () -> Unit
+) {
     Column(
         modifier = modifier.padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -125,45 +45,182 @@ fun ErrorState(message: String, onRetry: () -> Unit, modifier: Modifier = Modifi
 }
 
 @Composable
-private fun PromptContentCard(
-    language: String,
-    text: String,
-    onCopyClick: () -> Unit
-) {
-    Card(modifier = Modifier.fillMaxWidth()) {
-        Column(modifier = Modifier.padding(16.dp)) {
+fun AdaptivePromptDetailLayout(component: PromptDetailComponent) {
+    val state by component.state.collectAsState()
+
+    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+        if (maxWidth > 800.dp) {
+            // --- DESKTOP LAYOUT ---
             Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxSize(),
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                Text(language, style = MaterialTheme.typography.titleLarge)
-                IconButton(onClick = onCopyClick) {
-                    Icon(Icons.Default.ContentCopy, contentDescription = "Копировать $language")
+                // Левая панель (70%): Основной контент (редакторы)
+                LazyColumn(modifier = Modifier.weight(0.7f)) {
+                    // Здесь размещаем EditablePromptContentCard для RU, EN и т.д.
+                }
+                // Правая панель (30%): Метаданные
+                Column(modifier = Modifier.weight(0.3f)) {
+                    // Здесь секции с тегами, переменными, моделями.
+                    // Они тоже могут быть редактируемыми.
                 }
             }
-            Spacer(Modifier.height(8.dp))
-            SelectionContainer { // Позволяет выделять и копировать текст
-                Text(text, style = MaterialTheme.typography.bodyMedium)
-            }
+        } else {
+            // --- MOBILE LAYOUT ---
+            // Наш уже существующий LazyColumn-лейаут
+            MobilePromptDetailLayout(component, state)
         }
     }
 }
 
-@OptIn(ExperimentalLayoutApi::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
-private fun TagsSection(title: String, tags: List<String>) {
-    Column {
-        Text(title, style = MaterialTheme.typography.titleMedium)
-        Spacer(Modifier.height(8.dp))
-        FlowRow(
-            modifier = Modifier.fillMaxWidth(),
+private fun MobilePromptDetailLayout(
+    component: PromptDetailComponent,
+    state: PromptDetailState
+) {
+    val clipboardManager = LocalClipboardManager.current
+
+    // Ключевой момент: выбираем, какой промпт отображать (оригинал или черновик)
+    // Это избавляет от множества if/else в коде ниже.
+    val promptToDisplay = if (state.isEditing) state.draftPrompt else state.prompt
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = {
+                    // В режиме просмотра заголовок нередактируемый
+                    if (!state.isEditing) {
+                        Text(
+                            text = promptToDisplay?.title ?: "Загрузка...",
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                },
+                navigationIcon = {
+                    IconButton(onClick = { component.onEvent(PromptDetailEvent.BackClicked) }) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Назад")
+                    }
+                },
+                actions = {
+                    if (state.isEditing) {
+                        // Кнопка отмены в режиме редактирования
+                        TextButton(onClick = { component.onEvent(PromptDetailEvent.CancelClicked) }) {
+                            Text("ОТМЕНА")
+                        }
+                    } else {
+                        // Кнопка "В избранное" в режиме просмотра
+                        promptToDisplay?.let { prompt ->
+                            IconButton(onClick = { component.onEvent(PromptDetailEvent.FavoriteClicked) }) {
+                                Icon(
+                                    imageVector = if (prompt.isFavorite) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
+                                    contentDescription = "В избранное",
+                                    tint = if (prompt.isFavorite) MaterialTheme.colorScheme.primary else LocalContentColor.current
+                                )
+                            }
+                        }
+                    }
+                }
+            )
+        },
+        floatingActionButton = {
+            if (state.prompt != null && !state.isLoading) {
+                FloatingActionButton(
+                    onClick = {
+                        val event =
+                            if (state.isEditing) PromptDetailEvent.SaveClicked else PromptDetailEvent.EditClicked
+                        component.onEvent(event)
+                    }
+                ) {
+                    val icon = if (state.isEditing) Icons.Default.Done else Icons.Default.Edit
+                    Icon(icon, contentDescription = if (state.isEditing) "Сохранить" else "Редактировать")
+                }
+            }
+        }
+    ) { paddingValues ->
+        LazyColumn(
+            modifier = Modifier.fillMaxSize().padding(paddingValues),
+            contentPadding = PaddingValues(
+                start = 16.dp,
+                end = 16.dp,
+                top = 16.dp,
+                bottom = 80.dp
+            ), // Отступ снизу для FAB
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            tags.forEach { tag ->
-                SuggestionChip(
-                    onClick = { /* Можно реализовать действие по клику */ },
-                    label = { Text(tag) }
-                )
+            when {
+                state.isLoading -> item {
+                    Box(
+                        Modifier.fillParentMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) { CircularProgressIndicator() }
+                }
+                state.error != null -> item { ErrorState(state.error) { component.onEvent(PromptDetailEvent.Refresh) } }
+                promptToDisplay != null -> {
+                    // --- Редактируемый Заголовок ---
+                    if (state.isEditing) {
+                        item {
+                            OutlinedTextField(
+                                value = promptToDisplay.title,
+                                onValueChange = { component.onEvent(PromptDetailEvent.TitleChanged(it)) },
+                                label = { Text("Заголовок") },
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        }
+                    }
+
+                    // --- Редактируемый контент (RU) ---
+                    promptToDisplay.content?.ru?.let {
+                        item {
+                            EditablePromptContentCard(
+                                language = "Русский",
+                                viewText = it,
+                                editText = it, // В draftPrompt мы будем менять это поле
+                                isEditing = state.isEditing,
+                                onValueChange = { newText ->
+                                    component.onEvent(
+                                        PromptDetailEvent.ContentChanged(
+                                            PromptLanguage.RU, newText
+                                        )
+                                    )
+                                },
+                                onCopyClick = { clipboardManager.setText(AnnotatedString(it)) }
+                            )
+                        }
+                    }
+
+                    // --- Редактируемый контент (EN) ---
+                    promptToDisplay.content?.en?.let {
+                        item {
+                            EditablePromptContentCard(
+                                language = "English",
+                                viewText = it,
+                                editText = it,
+                                isEditing = state.isEditing,
+                                onValueChange = { newText ->
+                                    component.onEvent(
+                                        PromptDetailEvent.ContentChanged(
+                                            PromptLanguage.EN, newText
+                                        )
+                                    )
+                                },
+                                onCopyClick = { clipboardManager.setText(AnnotatedString(it)) }
+                            )
+                        }
+                    }
+
+                    // --- Редактируемые теги ---
+                    item {
+                        EditableTagsSection(
+                            title = "Теги",
+                            tags = promptToDisplay.tags,
+                            isEditing = state.isEditing,
+                            onAddTag = { /* component.onEvent(...) */ },
+                            onRemoveTag = { /* component.onEvent(...) */ }
+                        )
+                    }
+                }
             }
         }
     }

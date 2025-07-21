@@ -1,14 +1,13 @@
-package com.arny.aipromptmaster.data.mappers
+package com.arny.aiprompts.mappers
 
 import com.arny.aiprompts.models.ChatCompletionResponse
 import com.arny.aiprompts.models.ChatCompletionResponseDTO
 import com.arny.aiprompts.models.Choice
 import com.arny.aiprompts.models.ChoiceDTO
-import com.arny.aiprompts.models.Message
+import com.arny.aiprompts.models.ChatMessage
 import com.arny.aiprompts.models.MessageDTO
 import com.arny.aiprompts.models.Usage
 import com.arny.aiprompts.models.UsageDTO
-
 
 object ChatMapper {
     fun toDomain(dto: ChatCompletionResponseDTO): ChatCompletionResponse {
@@ -26,10 +25,11 @@ object ChatMapper {
         )
     }
 
-    private fun toDomainMessage(dto: MessageDTO): Message {
-        return Message(
+    private fun toDomainMessage(dto: MessageDTO): ChatMessage {
+        return ChatMessage(
             role = dto.role,
-            content = dto.content
+            content = dto.content,
+            timestamp = 0L
         )
     }
 

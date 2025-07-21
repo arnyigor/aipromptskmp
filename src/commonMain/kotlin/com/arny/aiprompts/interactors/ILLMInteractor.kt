@@ -1,7 +1,7 @@
 package com.arny.aiprompts.interactors
 
 import com.arny.aiprompts.models.LlmModel
-import com.arny.aiprompts.models.Message
+import com.arny.aiprompts.models.ChatMessage
 import com.arny.aiprompts.results.DataResult
 import kotlinx.coroutines.flow.Flow
 
@@ -12,6 +12,6 @@ interface ILLMInteractor {
     suspend fun selectModel(id: String)
     suspend fun refreshModels(): Result<Unit>
     suspend fun toggleModelSelection(clickedModelId: String)
-    fun getChatHistoryFlow(): Flow<List<Message>>
+    fun getChatHistoryFlow(): Flow<List<ChatMessage>>
     suspend fun clearChat()
 }

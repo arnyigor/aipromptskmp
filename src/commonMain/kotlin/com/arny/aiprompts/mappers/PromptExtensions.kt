@@ -13,8 +13,8 @@ import java.util.*
 fun Prompt.toEntity(): PromptEntity = PromptEntity(
     id = id,
     title = title,
-    contentRu = content.ru,
-    contentEn = content.en,
+    contentRu = content?.ru.orEmpty(),
+    contentEn = content?.en.orEmpty(),
     description = description,
     category = category,
     status = status,

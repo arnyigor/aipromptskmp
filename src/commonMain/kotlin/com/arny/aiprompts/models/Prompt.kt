@@ -7,7 +7,7 @@ data class Prompt(
     val id: String = UUID.randomUUID().toString(),
     val title: String,
     val description: String?,
-    val content: PromptContent,
+    val content: PromptContent?,
     val variables: Map<String, String> = emptyMap(),
     val compatibleModels: List<String>,
     val category: String,

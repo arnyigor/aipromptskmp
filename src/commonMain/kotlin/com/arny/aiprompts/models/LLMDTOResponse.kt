@@ -14,7 +14,7 @@ data class ChatCompletionRequestDTO(
 
 @Serializable
 data class MessageDTO(
-    val role: String, // "user", "assistant", "system"
+    val role: ChatMessageRole, // "user", "assistant", "system"
     val content: String
 )
 

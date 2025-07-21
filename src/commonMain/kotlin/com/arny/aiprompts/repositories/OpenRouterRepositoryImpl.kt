@@ -29,7 +29,7 @@ class OpenRouterRepositoryImpl(private val httpClient: HttpClient) : IOpenRouter
 
     override suspend fun getChatCompletion(
         model: String,
-        messages: List<Message>,
+        messages: List<ChatMessage>,
         apiKey: String
     ): Result<ChatCompletionResponse> = try {
         val response: ChatCompletionResponse = httpClient.post("https://openrouter.ai/api/v1/chat/completions") {

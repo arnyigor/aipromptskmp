@@ -13,7 +13,7 @@ import com.arny.aiprompts.ui.prompts.PromptsScreen
 fun RootContent(component: RootComponent) {
     MaterialTheme {
         Children(
-            stack = component.childStack,
+            stack = component.stack,
             animation = stackAnimation(slide()) // Добавляем анимацию перехода
         ) { child ->
             // В зависимости от активного дочернего компонента, рисуем нужный экран

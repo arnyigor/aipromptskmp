@@ -1,14 +1,16 @@
 package com.arny.aiprompts.interactors
 
 import IOpenRouterRepository
-import com.arny.aiprompts.utils.StringProvider
+import com.arny.aiprompts.models.ChatMessage
+import com.arny.aiprompts.models.ChatMessageRole
 import com.arny.aiprompts.models.LlmModel
-import com.arny.aiprompts.models.Message
 import com.arny.aiprompts.repositories.IChatHistoryRepository
 import com.arny.aiprompts.repositories.ISettingsRepository
 import com.arny.aiprompts.results.DataResult
+import com.arny.aiprompts.utils.StringProvider
 import com.arny.aiprompts.utils.StringRes
 import kotlinx.coroutines.flow.*
+import kotlinx.datetime.Clock
 
 class LLMInteractor(
     private val stringProvider: StringProvider,
@@ -25,7 +27,15 @@ class LLMInteractor(
                 val currentHistory = historyRepository.getHistoryFlow().first()
 
                 // 2. Создаем сообщение пользователя и сразу добавляем его в историю.
-                historyRepository.addMessages(listOf(Message(role = "user", content = userMessage)))
+                historyRepository.addMessages(
+                    listOf(
+                        ChatMessage(
+                            role = ChatMessageRole.USER,
+                            content = userMessage,
+                            timestamp = Clock.System.now().toEpochMilliseconds()
+                        )
+                    )
+                )
 
                 // 3. Формируем полный контекст для API.
                 // Берем историю (которая уже включает новое сообщение) и передаем в репозиторий.
@@ -46,7 +56,11 @@ class LLMInteractor(
                         val content = response.choices?.firstOrNull()?.message?.content
                         if (content != null) {
                             // 6. При успехе добавляем ответ модели в историю
-                            val modelMessage = Message(role = "assistant", content = content)
+                            val modelMessage = ChatMessage(
+                                role = ChatMessageRole.MODEL,
+                                content = content,
+                                timestamp = Clock.System.now().toEpochMilliseconds()
+                            )
                             historyRepository.addMessages(listOf(modelMessage))
                             emit(DataResult.Success(content))
                         } else {
@@ -61,7 +75,7 @@ class LLMInteractor(
         }
 
     // НОВЫЙ МЕТОД для получения истории для UI
-    override fun getChatHistoryFlow(): Flow<List<Message>> = historyRepository.getHistoryFlow()
+    override fun getChatHistoryFlow(): Flow<List<ChatMessage>> = historyRepository.getHistoryFlow()
 
     // НОВЫЙ МЕТОД для очистки истории
     override suspend fun clearChat() {

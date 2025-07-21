@@ -1,6 +1,6 @@
 import com.arny.aiprompts.models.ChatCompletionResponse
 import com.arny.aiprompts.models.LlmModel
-import com.arny.aiprompts.models.Message
+import com.arny.aiprompts.models.ChatMessage
 import kotlinx.coroutines.flow.Flow
 
 interface IOpenRouterRepository {
@@ -21,7 +21,7 @@ interface IOpenRouterRepository {
      */
     suspend fun getChatCompletion(
         model: String,
-        messages: List<Message>,
+        messages: List<ChatMessage>,
         apiKey: String,
     ): Result<ChatCompletionResponse>
 }

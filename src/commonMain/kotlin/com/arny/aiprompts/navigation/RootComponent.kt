@@ -1,6 +1,8 @@
 package com.arny.aiprompts.navigation
 
+import co.touchlab.kermit.Logger
 import com.arkivanov.decompose.ComponentContext
+import com.arkivanov.decompose.DelicateDecomposeApi
 import com.arkivanov.decompose.router.stack.*
 import com.arkivanov.decompose.value.Value
 import com.arny.aiprompts.features.details.DefaultPromptDetailComponent
@@ -9,10 +11,9 @@ import com.arny.aiprompts.features.list.DefaultPromptListComponent
 import com.arkivanov.decompose.router.stack.StackNavigation
 import com.arny.aiprompts.features.list.PromptListComponent
 import com.arny.aiprompts.interactors.IPromptsInteractor
-import org.koin.java.KoinJavaComponent.get
 
 interface RootComponent {
-    val childStack: Value<ChildStack<*, Child>>
+    val stack: Value<ChildStack<*, Child>>
 
     // Sealed-класс для дочерних компонентов, чтобы UI знал, какой экран рисовать
     sealed interface Child {
@@ -23,14 +24,12 @@ interface RootComponent {
 
 class DefaultRootComponent(
     componentContext: ComponentContext,
+    private val promptsInteractor: IPromptsInteractor,
 ) : RootComponent, ComponentContext by componentContext {
-
-    // Внедряем интерактор с помощью Koin
-    private val promptsInteractor: IPromptsInteractor = get(IPromptsInteractor::class.java)
 
     private val navigation = StackNavigation<ScreenConfig>()
 
-    override val childStack: Value<ChildStack<*, RootComponent.Child>> =
+    override val stack: Value<ChildStack<*, RootComponent.Child>> =
         childStack(
             source = navigation,
             serializer = ScreenConfig.serializer(), // Для сохранения стека
@@ -39,6 +38,7 @@ class DefaultRootComponent(
             childFactory = ::createChild // Фабрика для создания дочерних компонентов
         )
 
+    @OptIn(DelicateDecomposeApi::class)
     private fun createChild(
         config: ScreenConfig,
         context: ComponentContext
@@ -49,7 +49,7 @@ class DefaultRootComponent(
                     componentContext = context,
                     promptsInteractor = promptsInteractor,
                     onNavigateToDetails = { promptId ->
-                        // Переход на экран деталей
+                        Logger.withTag("RootComponent").i("PromptDetails promptId:$promptId")
                         navigation.push(ScreenConfig.PromptDetails(promptId))
                     }
                 )
@@ -57,6 +57,7 @@ class DefaultRootComponent(
             is ScreenConfig.PromptDetails -> RootComponent.Child.Details(
                 DefaultPromptDetailComponent(
                     componentContext = context,
+                    promptsInteractor = promptsInteractor,
                     promptId = config.promptId, // Передаем ID из конфига
                     onNavigateBack = {
                         // Возврат на предыдущий экран

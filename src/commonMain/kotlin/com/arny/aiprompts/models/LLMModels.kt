@@ -7,11 +7,27 @@ import java.math.BigDecimal
 import java.util.*
 
 @Serializable
-data class Message(
+data class ChatMessage(
     val id: String = UUID.randomUUID().toString(),
-    val role: String, // "user", "assistant", "system"
-    val content: String
+    val role: ChatMessageRole, // "user", "assistant", "system"
+    val content: String,
+    val timestamp: Long
 )
+
+enum class ChatMessageRole {
+    @SerialName("user")
+    USER,
+    @SerialName("assistant")
+    MODEL,
+    @SerialName("system")
+    SYSTEM;
+
+    override fun toString(): String = when (this) {
+        USER -> "user"
+        MODEL -> "assistant"
+        SYSTEM -> "system"
+    }
+}
 
 @Serializable
 data class ChatCompletionResponse(
@@ -29,7 +45,7 @@ data class ApiError(
 
 @Serializable
 data class Choice(
-    val message: Message,
+    val message: ChatMessage,
     @SerialName("finish_reason") val finishReason: String? = null
 )
 

@@ -17,7 +17,7 @@ data class PromptJson(
     @SerialName("compatible_models") var compatibleModels: List<String> = emptyList(),
     @SerialName("category") var category: String? = null,
     @SerialName("tags") var tags: List<String> = emptyList(),
-    @SerialName("variables") var variables: List<Variable> = emptyList(),
+    @SerialName("variables") var variables: List<PromptVariable> = emptyList(),
     @SerialName("metadata") var metadata: Metadata? = Metadata(),
     @SerialName("rating") var rating: Rating? = Rating(),
     @SerialName("created_at") var createdAt: String? = null,

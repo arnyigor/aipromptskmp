@@ -85,6 +85,7 @@ kotlin {
                 implementation("io.insert-koin:koin-compose:${libs.versions.koin.get()}") {
                     exclude(group = "org.jetbrains.kotlinx", module = "kotlinx-coroutines-android")
                 }
+
             }
         }
 
@@ -173,5 +174,3 @@ dependencies {
     add("kspAndroid", libs.androidx.room.compiler)
     add("kspDesktop", libs.androidx.room.compiler)
 }
-
-
