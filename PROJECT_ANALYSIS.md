@@ -120,12 +120,15 @@ pie
 ```
 
 ### Ключевые версии
-- **Kotlin**: `2.0.0`
-- **Compose Plugin**: `1.6.10`
-- **Ktor**: `2.3.12`
-- **Decompose**: `3.0.0`
-- **Room**: `2.7.0-alpha04`
-- **Koin**: `3.5.6`
+- **Kotlin**: `2.2.0`
+- **Compose Plugin**: `1.8.2`
+- **Ktor**: `3.1.3`
+- **Decompose**: `3.3.0`
+- **Room**: `2.7.2`
+- **Koin**: `4.0.4`
+- **KSP**: `2.2.0-2.0.2`
+- **Coroutines**: `1.10.2`
+- **Android compileSdk**: `35`
 
 > **Примечание**: Использование актуальных версий требует строгого соблюдения [таблицы совместимости](https://github.com/JetBrains/compose-jb/blob/master/VERSIONING.md#kotlin-compatibility) (особенно для связки Kotlin и Compose).
 
