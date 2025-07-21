@@ -1,7 +1,7 @@
 package com.arny.aiprompts.di
 
 
-import co.touchlab.kermit.Logger
+import co.touchlab.kermit.Logger as AppLogger
 import com.arny.aiprompts.api.GitHubService
 import com.arny.aiprompts.api.OpenRouterService
 import io.ktor.client.*
@@ -33,10 +33,10 @@ val networkModule = module {
     single<HttpClient>(qualifier = GITHUB_HTTP_CLIENT) {
         HttpClient { // HttpClient(engine) - движок будет подставлен на каждой платформе
             install(Logging) {
-                level = LogLevel.ALL
+                level = LogLevel.HEADERS
                 logger = object : io.ktor.client.plugins.logging.Logger {
                     override fun log(message: String) {
-                        Logger.withTag("KtorHttpClient").i(message)
+                        AppLogger.withTag("KtorHttpClient").i(message)
                     }
                 }
             }
@@ -48,11 +48,19 @@ val networkModule = module {
     single<HttpClient>(qualifier = OPEN_ROUTER_HTTP_CLIENT) {
         HttpClient {
             install(ContentNegotiation) {
-                json(get()) // Используем Json, который мы определили выше
+                json(Json {
+                    prettyPrint = true
+                    isLenient = true
+                    ignoreUnknownKeys = true // Очень важный параметр, спасает от падений, если GitHub добавит новые поля
+                })
             }
             install(Logging) {
                 level = LogLevel.HEADERS
-                // ...
+                logger = object : io.ktor.client.plugins.logging.Logger {
+                    override fun log(message: String) {
+                        AppLogger.withTag("KtorHttpClient").i(message)
+                    }
+                }
             }
             // Здесь можно добавить Bearer Token для авторизации
             // install(Auth) { bearer { ... } }
@@ -74,7 +82,11 @@ val networkModule = module {
     single<HttpClient>(qualifier = OPEN_ROUTER_HTTP_CLIENT) {
         HttpClient {
             install(ContentNegotiation) {
-                json(get()) // get() - берет наш синглтон Json
+                json(Json {
+                    prettyPrint = true
+                    isLenient = true
+                    ignoreUnknownKeys = true // Очень важный параметр, спасает от падений, если GitHub добавит новые поля
+                })
             }
             install(Logging) {
                 level = LogLevel.HEADERS

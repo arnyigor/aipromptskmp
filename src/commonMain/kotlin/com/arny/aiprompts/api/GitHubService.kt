@@ -1,5 +1,6 @@
 package com.arny.aiprompts.api
 
+import com.arny.aiprompts.models.GitHubCommitResponse
 import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.request.*
@@ -7,11 +8,11 @@ import io.ktor.http.*
 
 class GitHubService(private val httpClient: HttpClient) {
 
-    companion object {
-        private const val BASE_URL = "https://api.github.com/"
-        private const val OWNER = "arnyigor"
-        private const val REPO = "aiprompts"
-        private const val BRANCH = "master"
+    private companion object {
+        const val BASE_URL = "https://api.github.com/"
+        const val OWNER = "arnyigor"
+        const val REPO = "aiprompts"
+        const val BRANCH = "master"
     }
 
     /**
@@ -33,6 +34,24 @@ class GitHubService(private val httpClient: HttpClient) {
             return response.body<ByteArray>()
         } else {
             throw Exception("Failed to download archive: ${response.status} ${response.body<String>()}")
+        }
+    }
+
+    suspend fun getLatestCommitHashForPath(path: String): String? {
+        val url = URLBuilder(BASE_URL).apply {
+            path("repos", OWNER, REPO, "commits")
+            parameters.append("path", path)
+            parameters.append("per_page", "1")
+        }.build()
+
+        return try {
+            val response = httpClient.get(url)
+            val commits = response.body<List<GitHubCommitResponse>>()
+            commits.firstOrNull()?.sha
+        } catch (e: Exception) {
+            e.printStackTrace()
+            // Здесь можно добавить логирование
+            null
         }
     }
 }

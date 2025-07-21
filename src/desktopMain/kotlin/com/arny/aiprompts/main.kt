@@ -7,6 +7,7 @@ import com.arkivanov.decompose.DefaultComponentContext
 import com.arkivanov.essenty.lifecycle.LifecycleRegistry
 import com.arny.aiprompts.di.initKoin
 import com.arny.aiprompts.navigation.DefaultRootComponent
+import com.arny.aiprompts.sync.ISyncManager
 import com.arny.aiprompts.ui.RootContent
 
 fun main() = application {
@@ -18,10 +19,13 @@ fun main() = application {
     // 2. Создаем Lifecycle
     val lifecycle = LifecycleRegistry()
 
-    // 3. РАСКОММЕНТИРУЙТЕ: Создаем полноценный корневой компонент
     val rootComponent = DefaultRootComponent(
         componentContext = DefaultComponentContext(lifecycle),
     )
+
+    // Запускаем проверку при старте
+    val syncManager: ISyncManager = org.koin.java.KoinJavaComponent.get(ISyncManager::class.java)
+    syncManager.syncIfNeeded()
 
     // 4. Создаем окно
     Window(

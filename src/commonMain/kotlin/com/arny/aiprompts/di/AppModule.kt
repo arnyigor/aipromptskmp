@@ -6,7 +6,9 @@ import com.arny.aiprompts.interactors.IPromptsInteractor
 import com.arny.aiprompts.interactors.LLMInteractor
 import com.arny.aiprompts.interactors.PromptsInteractorImpl
 import com.arny.aiprompts.repositories.*
+import com.arny.aiprompts.sync.ISyncManager
 import com.arny.aiprompts.sync.PromptSynchronizerImpl
+import com.arny.aiprompts.sync.SyncManagerImpl
 import org.koin.core.context.GlobalContext.startKoin
 import org.koin.dsl.KoinAppDeclaration
 import org.koin.dsl.module
@@ -30,6 +32,9 @@ val appModule = module {
     single<IOpenRouterRepository> { OpenRouterRepositoryImpl(get()) }
     single<IChatHistoryRepository> { ChatHistoryRepositoryImpl() }
     single<ISettingsRepository> { SettingsRepositoryImpl() }
+
+    single<ISyncSettingsRepository> { SyncSettingsRepositoryImpl(get()) }
+    single<ISyncManager> { SyncManagerImpl(get(), get(), get()) }
     // Репозитории
     single<IPromptSynchronizer> { PromptSynchronizerImpl(get(), get(), get(), get()) }
 

@@ -56,55 +56,54 @@ class PromptSynchronizerImpl(
         }
     }
 
-    override suspend fun synchronize(): SyncResult = withContext(Dispatchers.IO) {
+    // Он просто вызывает приватный метод, который делает всю работу.
+    override suspend fun synchronize(): SyncResult {
+        return performFullSync()
+    }
+
+    private suspend fun performFullSync(): SyncResult = withContext(Dispatchers.IO) {
         try {
-            // Создаем временную директорию с помощью Okio
             val tempDir = getCacheDir() / "aipromptmaster_${Clock.System.now().toEpochMilliseconds()}"
             FileSystem.SYSTEM.createDirectories(tempDir)
-
             log.i { "Created temp directory: $tempDir" }
 
             try {
                 // 1. Загружаем архив
-                val responseBody = githubService.downloadArchive(
-                ) // Предполагаем, что сервис возвращает ByteArray или InputStream
+                val responseBody = githubService.downloadArchive()
 
-                // 2. Сохраняем и распаковываем архив с помощью Okio
+                // 2. Распаковываем
                 val zipFile = tempDir / "repo.zip"
                 FileSystem.SYSTEM.write(zipFile) { write(responseBody) }
-
                 val unzippedDir = tempDir / "unzipped"
                 FileSystem.SYSTEM.createDirectories(unzippedDir)
                 unzipWithOkio(zipFile, unzippedDir)
-                log.i { "Archive unzipped to: $unzippedDir" }
 
-                // 3. Ищем директорию prompts
+                // 3. Ищем директорию
                 val promptsDir = findPromptsDirectory(unzippedDir)
                     ?: return@withContext SyncResult.Error("Директория prompts не найдена в архиве")
 
-                log.i { "Found prompts directory: $promptsDir" }
-
-                // 4. Обрабатываем JSON файлы
+                // 4. Обрабатываем JSON
                 val remotePrompts = mutableListOf<Prompt>()
                 val errors = mutableListOf<String>()
                 processDirectory(promptsDir, remotePrompts, errors)
 
                 if (remotePrompts.isEmpty() && errors.isEmpty()) {
-                    log.w { "No prompts found in archive" }
                     return@withContext SyncResult.Error("Не найдены промпты в репозитории")
                 }
-
                 if (errors.isNotEmpty()) {
-                    log.w { "Sync completed with errors: ${errors.joinToString()}" }
                     return@withContext SyncResult.Error("Синхронизация завершена с ошибками:\n${errors.joinToString("\n")}")
                 }
 
-                // 5. Обрабатываем удаленные и сохраняем обновленные
+                // 5. Сохраняем в БД
                 handleDeletedPrompts(remotePrompts)
                 promptsRepository.savePrompts(remotePrompts)
-                settings.putLong(LAST_SYNC_KEY, Clock.System.now().toEpochMilliseconds())
+
+                // --- УДАЛЕНО ---
+                // settings.putLong(LAST_SYNC_KEY, Clock.System.now().toEpochMilliseconds())
+                // Эту ответственность мы передали SyncManager
 
                 log.i { "Sync completed successfully, processed ${remotePrompts.size} prompts." }
+                // Возвращаем результат, который будет обработан SyncManager'ом
                 SyncResult.Success(remotePrompts)
 
             } finally {

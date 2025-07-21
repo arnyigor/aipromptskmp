@@ -47,7 +47,6 @@ class DefaultPromptListComponent(
     init {
         scope.launch {
             loadPrompts()
-            synchronize(isInitialSync = true)
         }
     }
 
@@ -128,6 +127,7 @@ class DefaultPromptListComponent(
             if (!isInitialSync) _state.update { it.copy(isSyncing = true) }
             when (promptsInteractor.synchronize()) {
                 is SyncResult.Success -> loadPrompts()
+                is SyncResult.Skipped -> { /* no-op */ }
                 is SyncResult.Error -> if (!isInitialSync) _state.update { it.copy(error = "Ошибка синхронизации") }
                 is SyncResult.Conflicts -> if (!isInitialSync) _state.update { it.copy(error = "Конфликты синхронизации") }
             }
