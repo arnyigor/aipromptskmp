@@ -6,6 +6,7 @@ import com.arny.aiprompts.interactors.IPromptsInteractor
 import com.arny.aiprompts.models.Prompt
 import com.arny.aiprompts.models.SyncResult
 import com.arny.aiprompts.ui.prompts.PromptsListState
+import com.arny.aiprompts.ui.prompts.SortOrder
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -15,10 +16,21 @@ import kotlinx.coroutines.launch
 interface PromptListComponent {
     val state: StateFlow<PromptsListState>
 
+    fun onRefresh()
+
+    // --- Обновленные и новые методы для UI ---
     fun onPromptClicked(id: String)
     fun onFavoriteClicked(id: String)
-    fun onFilterChanged(filter: PromptsListState.Filter)
-    fun onRefresh()
+    fun onSearchQueryChanged(query: String)
+    fun onCategoryChanged(category: String)
+    fun onSortOrderChanged(sortOrder: SortOrder)
+    fun onFavoritesToggleChanged(isFavoritesOnly: Boolean)
+    fun onSortDirectionToggle()
+
+    // Методы для правой панели действий
+    fun onAddPromptClicked()
+    fun onEditPromptClicked()
+    fun onDeletePromptClicked()
 }
 
 class DefaultPromptListComponent(
@@ -33,115 +45,121 @@ class DefaultPromptListComponent(
     private val scope = coroutineScope()
 
     init {
-        // Запускаем синхронизацию и загрузку при создании компонента
-        onRefresh()
+        scope.launch {
+            loadPrompts()
+            synchronize(isInitialSync = true)
+        }
     }
 
-    // Загрузка данных из БД
+    override fun onRefresh() {
+        synchronize(isInitialSync = false)
+    }
+
+    override fun onPromptClicked(id: String) {
+        // Обновляем ID выбранного элемента для правой панели
+        _state.update { it.copy(selectedPromptId = id) }
+        // Можно и сразу навигацию делать, если на desktop не нужна правая панель
+        // onNavigateToDetails(id)
+    }
+
+    override fun onFavoriteClicked(id: String) {
+        scope.launch {
+            promptsInteractor.toggleFavorite(id)
+            val updatedPrompts = _state.value.allPrompts.map {
+                if (it.id == id) it.copy(isFavorite = !it.isFavorite) else it
+            }
+            _state.update { it.copy(allPrompts = updatedPrompts) }
+            applyFiltersAndSorting()
+        }
+    }
+
+    override fun onSearchQueryChanged(query: String) {
+        _state.update { it.copy(searchQuery = query) }
+        applyFiltersAndSorting()
+    }
+
+    override fun onCategoryChanged(category: String) {
+        _state.update { it.copy(selectedCategory = category) }
+        applyFiltersAndSorting()
+    }
+
+    override fun onSortDirectionToggle() {
+        _state.update { it.copy(isSortAscending = !it.isSortAscending) }
+        applyFiltersAndSorting() // <-- Важно переприменить сортировку
+    }
+
+
+    override fun onSortOrderChanged(sortOrder: SortOrder) {
+        _state.update { it.copy(selectedSortOrder = sortOrder) }
+        applyFiltersAndSorting()
+    }
+
+    override fun onFavoritesToggleChanged(isFavoritesOnly: Boolean) {
+        _state.update { it.copy(isFavoritesOnly = isFavoritesOnly) }
+        applyFiltersAndSorting()
+    }
+
+    override fun onAddPromptClicked() { /* TODO: Навигация на экран создания */
+    }
+
+    override fun onEditPromptClicked() {
+        state.value.selectedPromptId?.let { /* TODO: Навигация на экран редактирования с ID */ }
+    }
+
+    override fun onDeletePromptClicked() {
+        state.value.selectedPromptId?.let { /* TODO: Показать диалог и удалить по ID */ }
+    }
+
     private fun loadPrompts() {
         scope.launch {
             _state.update { it.copy(isLoading = true, error = null) }
             try {
-                // Вызываем интерактор для получения данных
-                val allPrompts = promptsInteractor.getPrompts(
-                    query = "", // Начальный пустой запрос
-                    limit = Int.MAX_VALUE, // Загружаем все для кеширования
-                    offset = 0
-                )
-
-                _state.update {
-                    it.copy(
-                        isLoading = false,
-                        allPrompts = allPrompts,
-                        currentPrompts = filterPrompts(allPrompts, it.selectedFilter)
-                    )
-                }
+                val allPrompts = promptsInteractor.getPrompts(query = "", limit = Int.MAX_VALUE, offset = 0)
+                _state.update { it.copy(isLoading = false, allPrompts = allPrompts) }
+                applyFiltersAndSorting()
             } catch (e: Exception) {
                 _state.update { it.copy(isLoading = false, error = "Не удалось загрузить промпты: ${e.message}") }
             }
         }
     }
 
-    /**
-     * Синхронизирует данные с сервером.
-     * @param isInitialSync true, если это первая синхронизация, чтобы не показывать ошибку, если нет сети при запуске.
-     */
-    private fun synchronize(isInitialSync: Boolean = false) {
+    private fun synchronize(isInitialSync: Boolean) {
         scope.launch {
-            // Показываем индикатор синхронизации (например, для SwipeRefresh)
-            _state.update { it.copy(isSyncing = true, error = null) }
-
-            // Используем when для обработки всех вариантов SyncResult
-            when (val result = promptsInteractor.synchronize()) {
-                is SyncResult.Success -> {
-                    // Данные УЖЕ сохранены в БД синхронизатором.
-                    // Теперь нам нужно просто перезагрузить их в UI.
-                    // Вызываем loadPrompts, чтобы обновить allPrompts и currentPrompts.
-                    loadPrompts()
-                }
-
-                is SyncResult.Error -> {
-                    // Показываем ошибку, только если это не первая "тихая" синхронизация
-                    if (!isInitialSync) {
-                        _state.update { it.copy(error = result.message) }
-                    }
-                }
-
-                is SyncResult.Conflicts -> {
-                    if (!isInitialSync) {
-                        _state.update { it.copy(error = "Обнаружены конфликты синхронизации") }
-                    }
-                }
+            if (!isInitialSync) _state.update { it.copy(isSyncing = true) }
+            when (promptsInteractor.synchronize()) {
+                is SyncResult.Success -> loadPrompts()
+                is SyncResult.Error -> if (!isInitialSync) _state.update { it.copy(error = "Ошибка синхронизации") }
+                is SyncResult.Conflicts -> if (!isInitialSync) _state.update { it.copy(error = "Конфликты синхронизации") }
             }
-
-            // Убираем индикатор синхронизации ПОСЛЕ всех операций
             _state.update { it.copy(isSyncing = false) }
         }
     }
 
-    override fun onFavoriteClicked(id: String) {
-        scope.launch {
-            // Вызываем интерактор для изменения статуса
-            promptsInteractor.toggleFavorite(id)
-
-            // Оптимистичное обновление UI: не ждем ответа от БД, а сразу меняем состояние
-            val updatedPrompts = _state.value.allPrompts.map {
-                if (it.id == id) it.copy(isFavorite = !it.isFavorite) else it
+    private fun applyFiltersAndSorting() {
+        val currentState = _state.value
+        val filteredList = currentState.allPrompts.filter { prompt ->
+            val favoriteMatch = if (currentState.isFavoritesOnly) prompt.isFavorite else true
+            val categoryMatch =
+                currentState.selectedCategory == "Все категории" || prompt.category == currentState.selectedCategory
+            val queryMatch = if (currentState.searchQuery.isBlank()) {
+                true
+            } else {
+                val query = currentState.searchQuery.trim().lowercase()
+                prompt.title.lowercase().contains(query) || prompt.description?.lowercase()?.contains(query) == true
             }
-            _state.update {
-                it.copy(
-                    allPrompts = updatedPrompts,
-                    currentPrompts = filterPrompts(updatedPrompts, it.selectedFilter)
-                )
-            }
+            favoriteMatch && categoryMatch && queryMatch
         }
-    }
 
-    override fun onFilterChanged(filter: PromptsListState.Filter) {
-        // Фильтрация теперь происходит только на клиенте, это очень быстро
+        val sortedList = when (currentState.selectedSortOrder) {
+            SortOrder.BY_FAVORITE_DESC -> filteredList.sortedWith(compareByDescending<Prompt> { it.isFavorite }.thenByDescending { it.modifiedAt })
+            SortOrder.BY_NAME_ASC -> filteredList.sortedBy { it.title }
+            SortOrder.BY_DATE_DESC -> filteredList.sortedByDescending { it.modifiedAt }
+            SortOrder.BY_CATEGORY -> filteredList.sortedBy { it.category }
+        }
         _state.update {
             it.copy(
-                selectedFilter = filter,
-                currentPrompts = filterPrompts(it.allPrompts, filter)
+                currentPrompts = if (it.isSortAscending) sortedList.reversed() else sortedList
             )
         }
     }
-
-    private fun filterPrompts(prompts: List<Prompt>, filter: PromptsListState.Filter): List<Prompt> {
-        return when (filter) {
-            PromptsListState.Filter.ALL -> prompts
-            PromptsListState.Filter.FAVORITES -> prompts.filter { it.isFavorite }
-        }
-    }
-
-    override fun onPromptClicked(id: String) {
-        onNavigateToDetails(id)
-    }
-
-    override fun onRefresh() {
-        // При "pull-to-refresh" мы запускаем синхронизацию
-        synchronize()
-    }
-
 }
-

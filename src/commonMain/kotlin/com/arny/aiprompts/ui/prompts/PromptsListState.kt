@@ -2,13 +2,35 @@ package com.arny.aiprompts.ui.prompts
 
 import com.arny.aiprompts.models.Prompt
 
+// Добавляем enum для удобной и типобезопасной работы с сортировкой
+enum class SortOrder(val title: String) {
+    BY_FAVORITE_DESC("Сначала избранное"),
+    BY_NAME_ASC("По названию"),
+    BY_DATE_DESC("По дате создания"),
+    BY_CATEGORY("По категории")
+}
+
 data class PromptsListState(
-    val isLoading: Boolean = false, // Для первоначальной загрузки
-    val isSyncing: Boolean = false, // Для pull-to-refresh / фоновой синхронизации
+    // Основные состояния
+    val isLoading: Boolean = false,
+    val isSyncing: Boolean = false,
+    val error: String? = null,
+
+    // Данные
     val allPrompts: List<Prompt> = emptyList(),
     val currentPrompts: List<Prompt> = emptyList(),
-    val selectedFilter: Filter = Filter.ALL,
-    val error: String? = null
-) {
-    enum class Filter { ALL, FAVORITES }
-}
+
+    // Состояние фильтров и сортировки
+    val searchQuery: String = "",
+    val selectedCategory: String = "Все категории",
+    val isSortAscending: Boolean = false,
+    val selectedSortOrder: SortOrder = SortOrder.BY_FAVORITE_DESC,
+    val isFavoritesOnly: Boolean = false, // <-- Замена для старого enum Filter
+
+    // Данные для UI (выпадающие списки)
+    val availableCategories: List<String> = listOf("Все категории", "Разработка", "Маркетинг", "Дизайн"),
+    val availableSortOrders: List<SortOrder> = SortOrder.entries, // .values() устарело
+
+    // Состояние для правой панели
+    val selectedPromptId: String? = null
+)
