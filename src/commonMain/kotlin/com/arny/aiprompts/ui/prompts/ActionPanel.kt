@@ -5,7 +5,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 
@@ -15,6 +14,7 @@ fun ActionPanel(
     onAdd: () -> Unit,
     onEdit: () -> Unit,
     onDelete: () -> Unit,
+    onSettings: () -> Unit, // <-- Добавляем новый параметр
     isActionEnabled: Boolean
 ) {
     Card(modifier = modifier) {
@@ -31,9 +31,13 @@ fun ActionPanel(
                 modifier = Modifier.fillMaxWidth(),
                 colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
             ) { Text("Удалить") }
-            Spacer(Modifier.weight(1f))
-            IconButton(onClick = { /* TODO */ }, modifier = Modifier.align(Alignment.CenterHorizontally)) {
-                Icon(Icons.Default.Settings, "Настройки")
+
+            Spacer(Modifier.weight(1f)) // Этот Spacer отодвигает кнопку настроек вниз
+
+            OutlinedButton(onClick = onSettings, modifier = Modifier.fillMaxWidth()) {
+                Icon(Icons.Default.Settings, contentDescription = null, modifier = Modifier.size(ButtonDefaults.IconSize))
+                Spacer(Modifier.size(ButtonDefaults.IconSpacing))
+                Text("Настройки")
             }
         }
     }

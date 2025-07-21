@@ -31,6 +31,9 @@ interface PromptListComponent {
     fun onAddPromptClicked()
     fun onEditPromptClicked()
     fun onDeletePromptClicked()
+
+    fun onMoreMenuToggle(isVisible: Boolean)
+    fun onSettingsClicked()
 }
 
 class DefaultPromptListComponent(
@@ -87,7 +90,6 @@ class DefaultPromptListComponent(
         applyFiltersAndSorting() // <-- Важно переприменить сортировку
     }
 
-
     override fun onSortOrderChanged(sortOrder: SortOrder) {
         _state.update { it.copy(selectedSortOrder = sortOrder) }
         applyFiltersAndSorting()
@@ -107,6 +109,14 @@ class DefaultPromptListComponent(
 
     override fun onDeletePromptClicked() {
         state.value.selectedPromptId?.let { /* TODO: Показать диалог и удалить по ID */ }
+    }
+
+    override fun onMoreMenuToggle(isVisible: Boolean) {
+        _state.update { it.copy(isMoreMenuVisible = isVisible) }
+    }
+
+    override fun onSettingsClicked() {
+        println("Settings Clicked!")
     }
 
     private fun loadPrompts() {

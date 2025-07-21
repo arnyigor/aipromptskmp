@@ -16,48 +16,131 @@ import androidx.compose.ui.unit.dp
 import com.arny.aiprompts.features.list.PromptListComponent
 import com.arny.aiprompts.models.Prompt
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PromptsScreen(component: PromptListComponent) {
     val state by component.state.collectAsState()
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Prompt Manager - Показано ${state.currentPrompts.size} из ${state.allPrompts.size}") },
-            )
-        }
-    ) { paddingValues ->
-        BoxWithConstraints(
-            modifier = Modifier.fillMaxSize().padding(paddingValues).padding(16.dp)
-        ) {
-            val isDesktopLayout = maxWidth > 840.dp
+    // Определяем лейаут один раз наверху
+    BoxWithConstraints {
+        val isDesktopLayout = maxWidth > 840.dp
 
-            if (isDesktopLayout) {
-                Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                    MainContent(
-                        modifier = Modifier.weight(1f),
-                        state = state,
-                        component = component
-                    )
-                    ActionPanel(
-                        modifier = Modifier.width(220.dp),
-                        onAdd = component::onAddPromptClicked,
-                        onEdit = component::onEditPromptClicked,
-                        onDelete = component::onDeletePromptClicked,
-                        isActionEnabled = state.selectedPromptId != null
-                    )
-                }
-            } else {
-                MainContent(
-                    modifier = Modifier.fillMaxSize(),
+        Scaffold(
+            topBar = {
+                PromptsTopAppBar(
                     state = state,
+                    isDesktopLayout = isDesktopLayout,
                     component = component
                 )
-                // TODO: Для мобильной версии добавить FloatingActionButton
+            },
+            floatingActionButton = {
+                // Показываем FAB только на мобильной версии
+                if (!isDesktopLayout) {
+                    FloatingActionButton(onClick = component::onAddPromptClicked) {
+                        Icon(Icons.Default.Add, contentDescription = "Добавить промпт")
+                    }
+                }
+            }
+        ) { paddingValues ->
+            // Основной контент
+            Box(modifier = Modifier.padding(paddingValues).padding(16.dp)) {
+                if (isDesktopLayout) {
+                    DesktopLayout(state, component)
+                } else {
+                    MobileLayout(state, component)
+                }
             }
         }
     }
+}
+
+@Composable
+private fun DesktopLayout(state: PromptsListState, component: PromptListComponent) {
+    Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+        // Левая панель (фильтры и список)
+        MainContent(
+            modifier = Modifier.weight(1f),
+            state = state,
+            component = component
+        )
+        // Правая панель (действия)
+        ActionPanel(
+            modifier = Modifier.width(220.dp),
+            onAdd = component::onAddPromptClicked,
+            onEdit = component::onEditPromptClicked,
+            onDelete = component::onDeletePromptClicked,
+            onSettings = component::onSettingsClicked, // Передаем обработчик настроек
+            isActionEnabled = state.selectedPromptId != null
+        )
+    }
+}
+
+@Composable
+private fun MobileLayout(state: PromptsListState, component: PromptListComponent) {
+    MainContent(
+        modifier = Modifier.fillMaxSize(),
+        state = state,
+        component = component
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun PromptsTopAppBar(
+    state: PromptsListState,
+    isDesktopLayout: Boolean,
+    component: PromptListComponent
+) {
+    TopAppBar(
+        title = {
+            // Разный заголовок для разных лейаутов
+            val titleText = if (isDesktopLayout) {
+                "Prompt Manager - Показано ${state.currentPrompts.size} из ${state.allPrompts.size}"
+            } else {
+                "Prompts"
+            }
+            Text(titleText)
+        },
+        actions = {
+            // Показываем меню "три точки" только на мобильной версии
+            if (!isDesktopLayout) {
+                Box {
+                    IconButton(onClick = { component.onMoreMenuToggle(true) }) {
+                        Icon(Icons.Default.MoreVert, contentDescription = "Дополнительные действия")
+                    }
+                    // Выпадающее меню
+                    DropdownMenu(
+                        expanded = state.isMoreMenuVisible,
+                        onDismissRequest = { component.onMoreMenuToggle(false) }
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text("Редактировать") },
+                            onClick = {
+                                component.onEditPromptClicked()
+                                component.onMoreMenuToggle(false)
+                            },
+                            enabled = state.selectedPromptId != null // Активируем, только если промпт выбран
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Удалить") },
+                            onClick = {
+                                component.onDeletePromptClicked()
+                                component.onMoreMenuToggle(false)
+                            },
+                            enabled = state.selectedPromptId != null
+                        )
+                        Divider()
+                        DropdownMenuItem(
+                            text = { Text("Настройки") },
+                            onClick = {
+                                component.onSettingsClicked()
+                                component.onMoreMenuToggle(false)
+                            }
+                        )
+                    }
+                }
+            }
+        }
+    )
 }
 
 @Composable

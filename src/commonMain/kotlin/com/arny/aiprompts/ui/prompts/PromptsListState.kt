@@ -32,5 +32,6 @@ data class PromptsListState(
     val availableSortOrders: List<SortOrder> = SortOrder.entries, // .values() устарело
 
     // Состояние для правой панели
-    val selectedPromptId: String? = null
+    val selectedPromptId: String? = null,
+    val isMoreMenuVisible: Boolean = false // Для управления выпадающим меню на mobile
 )
