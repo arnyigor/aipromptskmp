@@ -9,6 +9,9 @@ class GitHubService(private val httpClient: HttpClient) {
 
     companion object {
         private const val BASE_URL = "https://api.github.com/"
+        private const val OWNER = "arnyigor"
+        private const val REPO = "aiprompts"
+        private const val BRANCH = "master"
     }
 
     /**
@@ -16,13 +19,9 @@ class GitHubService(private val httpClient: HttpClient) {
      * @return Массив байт скачанного архива.
      * @throws Exception если запрос не удался.
      */
-    suspend fun downloadArchive(
-        owner: String,
-        repo: String,
-        ref: String
-    ): ByteArray {
+    suspend fun downloadArchive(): ByteArray {
         val url = URLBuilder(BASE_URL).apply {
-            path("repos", owner, repo, "zipball", ref)
+            path("repos", OWNER, REPO, "zipball", BRANCH)
         }.build()
 
         val response = httpClient.get(url) {

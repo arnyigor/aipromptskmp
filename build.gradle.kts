@@ -138,12 +138,6 @@ android {
         targetSdk = 35
         versionCode = 1
         versionName = "1.0.0"
-
-        // Передаем значения в BuildConfig для Android
-        buildConfigField("String", "GITHUB_OWNER", "\"${localProperties.getProperty("github.owner")}\"")
-        buildConfigField("String", "GITHUB_REPO", "\"${localProperties.getProperty("github.repo")}\"")
-        buildConfigField("String", "GITHUB_BRANCH", "\"${localProperties.getProperty("github.branch")}\"")
-        buildConfigField("String", "GITHUB_PROMPTS_PATH", "\"${localProperties.getProperty("github.promptsPath")}\"")
     }
 
     compileOptions {
@@ -170,14 +164,6 @@ compose.desktop {
             packageName = "AiPrompsKMP"
             packageVersion = "1.0.0"
         }
-
-        // Передаем свойства как системные проперти при запуске
-        jvmArgs += listOf(
-            "-Dgithub.owner=${localProperties.getProperty("github.owner")}",
-            "-Dgithub.repo=${localProperties.getProperty("github.repo")}",
-            "-Dgithub.branch=${localProperties.getProperty("github.branch")}",
-            "-Dgithub.promptsPath=${localProperties.getProperty("github.promptsPath")}"
-        )
     }
 }
 

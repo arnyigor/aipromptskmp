@@ -3,7 +3,6 @@ package com.arny.aiprompts.sync
 import co.touchlab.kermit.Logger
 import com.arny.aiprompts.api.GitHubService
 import com.arny.aiprompts.mappers.toDomain
-import com.arny.aiprompts.models.GitHubConfig
 import com.arny.aiprompts.models.Prompt
 import com.arny.aiprompts.models.PromptJson
 import com.arny.aiprompts.models.SyncResult
@@ -27,7 +26,6 @@ class PromptSynchronizerImpl(
     private val promptsRepository: IPromptsRepository,
     private val settings: Settings,
     private val json: Json,
-    private val config: GitHubConfig,
 ) : IPromptSynchronizer {
 
     companion object {
@@ -69,9 +67,6 @@ class PromptSynchronizerImpl(
             try {
                 // 1. Загружаем архив
                 val responseBody = githubService.downloadArchive(
-                    owner = config.owner,
-                    repo = config.repo,
-                    ref = config.branch
                 ) // Предполагаем, что сервис возвращает ByteArray или InputStream
 
                 // 2. Сохраняем и распаковываем архив с помощью Okio

@@ -31,7 +31,7 @@ val appModule = module {
     single<IChatHistoryRepository> { ChatHistoryRepositoryImpl() }
     single<ISettingsRepository> { SettingsRepositoryImpl() }
     // Репозитории
-    single<IPromptSynchronizer> { PromptSynchronizerImpl(get(), get(), get(), get(), get()) }
+    single<IPromptSynchronizer> { PromptSynchronizerImpl(get(), get(), get(), get()) }
 
     // Интеракторы
     single<IPromptsInteractor> { PromptsInteractorImpl(get(), get()) }
