@@ -14,6 +14,10 @@ class PromptsRepositoryImpl(
     private val dispatcher: CoroutineDispatcher
 ) : IPromptsRepository {
 
+    override suspend fun getPromptsCount(): Int = withContext(dispatcher) {
+        promptDao.getPromptsCount()
+    }
+
     override suspend fun getAllPrompts(): Flow<List<Prompt>> = promptDao
         .getAllPromptsFlow()
         .map { entities -> entities.map { it.toDomain() } }

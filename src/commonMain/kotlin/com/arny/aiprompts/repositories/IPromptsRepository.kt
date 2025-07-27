@@ -4,6 +4,7 @@ import com.arny.aiprompts.models.Prompt
 import kotlinx.coroutines.flow.Flow
 
 interface IPromptsRepository {
+    suspend fun getPromptsCount(): Int
     suspend fun getPromptById(promptId: String): Prompt?
     suspend fun insertPrompt(prompt: Prompt): Long
     suspend fun updatePrompt(prompt: Prompt)

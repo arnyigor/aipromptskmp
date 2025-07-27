@@ -4,12 +4,14 @@ import com.arkivanov.decompose.ComponentContext
 import com.arkivanov.essenty.lifecycle.coroutines.coroutineScope
 import com.arny.aiprompts.interactors.IPromptsInteractor
 import com.arny.aiprompts.models.Prompt
-import com.arny.aiprompts.models.SyncResult
+import com.arny.aiprompts.models.SyncStatus
+import com.arny.aiprompts.sync.ISyncManager
 import com.arny.aiprompts.ui.prompts.PromptsListState
 import com.arny.aiprompts.ui.prompts.SortOrder
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -34,11 +36,14 @@ interface PromptListComponent {
 
     fun onMoreMenuToggle(isVisible: Boolean)
     fun onSettingsClicked()
+    fun onTokenDialogDismiss()
+    fun onTokenSave(token: String)
 }
 
 class DefaultPromptListComponent(
     componentContext: ComponentContext,
     private val promptsInteractor: IPromptsInteractor,
+    private val syncManager: ISyncManager,
     private val onNavigateToDetails: (promptId: String) -> Unit,
 ) : PromptListComponent, ComponentContext by componentContext {
 
@@ -51,10 +56,25 @@ class DefaultPromptListComponent(
         scope.launch {
             loadPrompts()
         }
+        scope.launch {
+            syncManager.syncState.collectLatest { syncStatus ->
+                _state.update { it.copy(syncStatus = syncStatus) }
+                if (syncStatus is SyncStatus.Success) {
+                    loadPrompts() // Reload prompts after successful sync
+                } else if (syncStatus is SyncStatus.Error) {
+                    _state.update { it.copy(error = syncStatus.message) }
+                }
+            }
+        }
+        scope.launch {
+            syncManager.sync() // Initial sync attempt
+        }
     }
 
     override fun onRefresh() {
-        synchronize(isInitialSync = false)
+        scope.launch {
+            syncManager.sync()
+        }
     }
 
     override fun onPromptClicked(id: String) {
@@ -118,7 +138,25 @@ class DefaultPromptListComponent(
     }
 
     override fun onSettingsClicked() {
-        println("Settings Clicked!")
+        val currentToken = promptsInteractor.getGitHubToken().orEmpty()
+        _state.update {
+            it.copy(
+                isTokenDialogVisible = true,
+                currentGitHubToken = currentToken // и сохраняем его в state
+            )
+        }
+    }
+
+    override fun onTokenDialogDismiss() {
+        _state.update { it.copy(isTokenDialogVisible = false, currentGitHubToken = "") }
+    }
+
+    override fun onTokenSave(token: String) {
+        scope.launch {
+            promptsInteractor.saveGitHubToken(token)
+            _state.update { it.copy(isTokenDialogVisible = false, currentGitHubToken = "") }
+            syncManager.sync()
+        }
     }
 
     private fun loadPrompts() {
@@ -131,21 +169,6 @@ class DefaultPromptListComponent(
             } catch (e: Exception) {
                 _state.update { it.copy(isLoading = false, error = "Не удалось загрузить промпты: ${e.message}") }
             }
-        }
-    }
-
-    private fun synchronize(isInitialSync: Boolean) {
-        scope.launch {
-            if (!isInitialSync) _state.update { it.copy(isSyncing = true) }
-            when (promptsInteractor.synchronize()) {
-                is SyncResult.Success -> loadPrompts()
-                is SyncResult.Skipped -> { /* no-op */
-                }
-
-                is SyncResult.Error -> if (!isInitialSync) _state.update { it.copy(error = "Ошибка синхронизации") }
-                is SyncResult.Conflicts -> if (!isInitialSync) _state.update { it.copy(error = "Конфликты синхронизации") }
-            }
-            _state.update { it.copy(isSyncing = false) }
         }
     }
 

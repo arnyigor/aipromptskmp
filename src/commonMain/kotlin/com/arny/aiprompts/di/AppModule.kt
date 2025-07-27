@@ -34,12 +34,12 @@ val appModule = module {
     single<ISettingsRepository> { SettingsRepositoryImpl() }
 
     single<ISyncSettingsRepository> { SyncSettingsRepositoryImpl(get()) }
-    single<ISyncManager> { SyncManagerImpl(get(), get(), get()) }
+    single<ISyncManager> { SyncManagerImpl(get(), get(), get(), get()) }
     // Репозитории
     single<IPromptSynchronizer> { PromptSynchronizerImpl(get(), get(), get(), get()) }
 
     // Интеракторы
-    single<IPromptsInteractor> { PromptsInteractorImpl(get(), get()) }
+    single<IPromptsInteractor> { PromptsInteractorImpl(get(), get(), get()) }
 
     // 3. Регистрируем интерактор. Здесь все было правильно.
     single<ILLMInteractor> {

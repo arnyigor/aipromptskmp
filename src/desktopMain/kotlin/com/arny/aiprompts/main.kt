@@ -31,7 +31,7 @@ fun main() = application {
     )
 
     // Запускаем проверку при старте
-    syncManager.syncIfNeeded()
+    syncManager.sync()
 
     // 4. Создаем окно
     Window(

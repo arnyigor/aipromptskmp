@@ -9,6 +9,7 @@ import org.koin.android.ext.koin.androidLogger
 class AiPromptsAndroidApplication : Application() {
     override fun onCreate() {
         super.onCreate()
+        AppContext.initialize(this)
         // Инициализируем Koin здесь
         initKoin {
             androidLogger() // Включаем логгирование для Android
@@ -16,6 +17,6 @@ class AiPromptsAndroidApplication : Application() {
         }
         // Запускаем проверку при старте
         val syncManager: ISyncManager = org.koin.java.KoinJavaComponent.get(ISyncManager::class.java)
-        syncManager.syncIfNeeded()
+        syncManager.sync()
     }
 }

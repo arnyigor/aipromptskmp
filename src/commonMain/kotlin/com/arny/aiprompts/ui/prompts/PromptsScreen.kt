@@ -7,14 +7,18 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.arny.aiprompts.features.list.PromptListComponent
 import com.arny.aiprompts.models.Prompt
+import com.arny.aiprompts.models.SyncStatus
+import androidx.compose.runtime.rememberCoroutineScope
 
 @Composable
 fun PromptsScreen(component: PromptListComponent) {
@@ -23,6 +27,19 @@ fun PromptsScreen(component: PromptListComponent) {
     // Определяем лейаут один раз наверху
     BoxWithConstraints {
         val isDesktopLayout = maxWidth > 840.dp
+
+        val snackbarHostState = remember { SnackbarHostState() }
+        val scope = rememberCoroutineScope()
+
+        if (state.isTokenDialogVisible) {
+            GitHubTokenDialog(
+                initialToken = state.currentGitHubToken,
+                snackbarHostState = snackbarHostState,
+                scope = scope,
+                onDismissRequest = component::onTokenDialogDismiss,
+                onSaveToken = component::onTokenSave
+            )
+        }
 
         Scaffold(
             topBar = {
@@ -39,7 +56,8 @@ fun PromptsScreen(component: PromptListComponent) {
                         Icon(Icons.Default.Add, contentDescription = "Добавить промпт")
                     }
                 }
-            }
+            },
+            snackbarHost = { SnackbarHost(snackbarHostState) }
         ) { paddingValues ->
             // Основной контент
             Box(modifier = Modifier.padding(paddingValues).padding(16.dp)) {
@@ -47,6 +65,17 @@ fun PromptsScreen(component: PromptListComponent) {
                     DesktopLayout(state, component)
                 } else {
                     MobileLayout(state, component)
+                }
+            }
+
+            // Отображение статуса синхронизации
+            LaunchedEffect(state.syncStatus) {
+                when (val status = state.syncStatus) {
+                    SyncStatus.InProgress -> snackbarHostState.showSnackbar("Синхронизация промптов...", duration = SnackbarDuration.Indefinite)
+                    is SyncStatus.Success -> snackbarHostState.showSnackbar("Синхронизация завершена. Обновлено промптов: ${status.updatedCount}", duration = SnackbarDuration.Short)
+                    is SyncStatus.Error -> snackbarHostState.showSnackbar("Ошибка синхронизации: ${status.message ?: "Неизвестная ошибка"}", duration = SnackbarDuration.Long)
+                    SyncStatus.None -> snackbarHostState.currentSnackbarData?.dismiss()
+                    is SyncStatus.Conflicts -> snackbarHostState.currentSnackbarData?.dismiss()
                 }
             }
         }

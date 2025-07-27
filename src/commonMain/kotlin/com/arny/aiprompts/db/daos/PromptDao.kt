@@ -19,6 +19,9 @@ interface PromptDao {
     @Query("SELECT * FROM prompts")
     suspend fun getAllPrompts(): List<PromptEntity>
 
+    @Query("SELECT COUNT(*) FROM prompts")
+    suspend fun getPromptsCount(): Int
+
     @Query("SELECT _id FROM prompts")
     suspend fun getAllPromptIds(): List<String>
 

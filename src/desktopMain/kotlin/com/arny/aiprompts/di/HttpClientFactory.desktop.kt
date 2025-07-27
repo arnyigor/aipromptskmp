@@ -21,11 +21,13 @@ actual fun createHttpClient(): HttpClient {
             // ИСПРАВЛЕНИЕ: Создаем кастомный Json-модуль
             json(
                 Json {
-                    ignoreUnknownKeys = true // Полезная опция, чтобы игнорировать неизвестные поля из API
                     // Регистрируем наш сериализатор для типа BigDecimal
                     serializersModule = SerializersModule {
                         contextual(BigDecimalSerializer)
                     }
+                    prettyPrint = true          // Для удобного логгирования
+                    isLenient = true            // Менее строгий режим (например, допускает лишние запятые)
+                    ignoreUnknownKeys = true    // ИГНОРИРОВАТЬ поля в JSON, которых нет в нашем data class
                 }
             )
         }

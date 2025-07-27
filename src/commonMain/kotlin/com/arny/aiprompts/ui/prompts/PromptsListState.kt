@@ -1,6 +1,7 @@
 package com.arny.aiprompts.ui.prompts
 
 import com.arny.aiprompts.models.Prompt
+import com.arny.aiprompts.models.SyncStatus
 
 // Добавляем enum для удобной и типобезопасной работы с сортировкой
 enum class SortOrder(val title: String) {
@@ -13,8 +14,10 @@ enum class SortOrder(val title: String) {
 data class PromptsListState(
     // Основные состояния
     val isLoading: Boolean = false,
-    val isSyncing: Boolean = false,
     val error: String? = null,
+    val isTokenDialogVisible: Boolean = false,
+    val currentGitHubToken: String = "",
+    val syncStatus: SyncStatus = SyncStatus.None,
 
     // Данные
     val allPrompts: List<Prompt> = emptyList(),

@@ -19,6 +19,8 @@ interface IPromptsInteractor {
     suspend fun synchronize(): SyncResult
     suspend fun getLastSyncTime(): Long?
     suspend fun toggleFavorite(promptId: String)
+    suspend fun saveGitHubToken(string: String)
+      fun getGitHubToken(): String?
 
     companion object {
         const val DEFAULT_PAGE_SIZE = 20

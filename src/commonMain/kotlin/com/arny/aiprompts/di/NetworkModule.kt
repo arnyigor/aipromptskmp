@@ -40,6 +40,13 @@ val networkModule = module {
                     }
                 }
             }
+            install(ContentNegotiation) {
+                json(Json {
+                    prettyPrint = true
+                    isLenient = true
+                    ignoreUnknownKeys = true // Очень важный параметр, спасает от падений, если GitHub добавит новые поля
+                })
+            }
             // Для GitHub API не нужен ContentNegotiation, так как мы качаем сырые байты
         }
     }
@@ -70,7 +77,7 @@ val networkModule = module {
     // --- Предоставляем наши сервисы ---
     single<GitHubService> {
         // Явно указываем, какой HttpClient использовать
-        GitHubService(httpClient = get(qualifier = GITHUB_HTTP_CLIENT))
+        GitHubService(httpClient = get(qualifier = GITHUB_HTTP_CLIENT), get())
     }
 
     single<OpenRouterService> {

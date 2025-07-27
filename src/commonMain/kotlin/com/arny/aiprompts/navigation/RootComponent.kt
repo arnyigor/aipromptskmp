@@ -11,6 +11,9 @@ import com.arny.aiprompts.features.list.DefaultPromptListComponent
 import com.arkivanov.decompose.router.stack.StackNavigation
 import com.arny.aiprompts.features.list.PromptListComponent
 import com.arny.aiprompts.interactors.IPromptsInteractor
+import com.arny.aiprompts.sync.ISyncManager
+import org.koin.core.component.KoinComponent
+import org.koin.core.component.inject
 
 interface RootComponent {
     val stack: Value<ChildStack<*, Child>>
@@ -25,7 +28,9 @@ interface RootComponent {
 class DefaultRootComponent(
     componentContext: ComponentContext,
     private val promptsInteractor: IPromptsInteractor,
-) : RootComponent, ComponentContext by componentContext {
+) : RootComponent, ComponentContext by componentContext, KoinComponent {
+
+    private val syncManager: ISyncManager by inject()
 
     private val navigation = StackNavigation<ScreenConfig>()
 
@@ -48,6 +53,7 @@ class DefaultRootComponent(
                 DefaultPromptListComponent(
                     componentContext = context,
                     promptsInteractor = promptsInteractor,
+                    syncManager = syncManager,
                     onNavigateToDetails = { promptId ->
                         Logger.withTag("RootComponent").i("PromptDetails promptId:$promptId")
                         navigation.push(ScreenConfig.PromptDetails(promptId))

@@ -139,7 +139,7 @@ class PromptSynchronizerImpl(
                 metadata.isDirectory -> processDirectory(file, remotePrompts, errors)
                 file.name.endsWith(".json") -> {
                     try {
-                        val jsonContent = FileSystem.SYSTEM.source(file).buffer().readUtf8()
+                        val jsonContent = FileSystem.SYSTEM.source(file).buffer().use { it.readUtf8() }
                         val promptJson = json.decodeFromString<PromptJson>(jsonContent)
                         remotePrompts.add(promptJson.toDomain())
                     } catch (e: Exception) {

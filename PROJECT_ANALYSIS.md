@@ -1,179 +1,134 @@
+# Анализ проекта AiPrompsKMP (Обновлено)
 
-# Анализ проекта: AiPromptsKMP
+## 1. Общее описание
 
-Этот документ содержит технический анализ кросс-платформенного приложения `AiPromptsKMP`, предназначенного для просмотра и управления промптами.
+Проект **AiPrompsKMP** представляет собой кросс-платформенное приложение для управления и использования AI-промптов, разработанное на базе **Kotlin Multiplatform (KMP)**. Приложение нацелено на две платформы: **Android** и **Desktop (JVM)**.
 
-## 1. Технологический стек и архитектура
+Архитектура проекта следует современным практикам разработки KMP-приложений, используя стек технологий, который обеспечивает максимальное переиспользование кода, хорошую тестируемость и масштабируемость.
 
-Проект построен на современном стеке Kotlin Multiplatform, что обеспечивает единую кодовую базу для бизнес-логики и UI на всех целевых платформах.
+## 2. Архитектура
 
-### Технологический стек
-- **Язык**: `Kotlin`
-- **Платформы**: `KMP` (Android, Desktop/JVM)
-- **UI**: `Compose Multiplatform`
-- **Асинхронность**: `Kotlin Coroutines` & `Flow`
-- **Навигация**: `Decompose`
-- **Dependency Injection**: `Koin`
-- **Сеть**: `Ktor Client` (взаимодействие с OpenRouter API)
-- **База данных**: `Room KMP` / `SQLite`
+Проект построен на основе **многослойной архитектуры**, близкой к **Clean Architecture**. Это обеспечивает четкое разделение ответственности между компонентами системы.
 
-### Архитектура
-Приложение следует принципам чистой архитектуры (Clean Architecture), разделяя логику на независимые слои (UI, бизнес-логика, данные). Это обеспечивает высокую тестируемость, масштабируемость и поддерживаемость проекта.
+-   **`commonMain`**: Ядро приложения. Содержит всю общую бизнес-логику, включая UI (написанный на Jetpack/JetBrains Compose), управление состоянием, навигацию, репозитории, интеракторы и модели данных.
+-   **`androidMain`**: Платформенный модуль для Android. Содержит точку входа в приложение (`MainActivity`, `AiPromptsAndroidApplication`), а также `actual`-реализации `expect`-деклараций из `commonMain`.
+-   **`desktopMain`**: Платформенный модуль для Desktop. Аналогично `androidMain`, содержит точку входа (`main.kt`) и платформенные реализации для JVM.
 
-```mermaid
-graph TD
-    subgraph UI Layer
-        A[Compose UI] --> B[Component/ViewModel];
-    end
-    subgraph Domain Layer
-        B --> C[Интеракторы];
-    end
-    subgraph Data Layer
-        C --> D[Репозитории];
-        D --> E[API (Ktor)];
-        D --> F[БД (Room)];
-    end
-```
+## 3. Ключевые технологии
 
-### Ключевые компоненты
-- **`RootComponent`**: Корневой компонент Decompose, управляющий навигационным стеком и жизненным циклом дочерних экранов.
-- **`PromptListComponent` / `PromptDetailComponent`**: Компоненты экранов, аналог ViewModel в KMP, отвечающие за состояние UI и обработку действий пользователя.
-- **`LLMInteractor`**: Ядро бизнес-логики, координирующее взаимодействие между репозиториями и UI.
-- **`OpenRouterRepository`**: Абстракция для работы с внешним LLM API, инкапсулирует логику сетевых запросов.
+| Технология | Назначение |
+| :--- | :--- |
+| **Kotlin Multiplatform** | Основа для создания общего кода для Android и Desktop. |
+| **Jetpack/JetBrains Compose** | Декларативный UI-фреймворк для создания общего пользовательского интерфейса. |
+| **Decompose** | Библиотека для навигации и управления жизненным циклом компонентов в KMP. |
+| **Koin** | Фреймворк для внедрения зависимостей (DI). |
+| **Kotlinx Coroutines** | Основа для выполнения асинхронных операций. |
+| **Ktor Client** | HTTP-клиент для выполнения сетевых запросов. |
+| **Kotlinx Serialization** | Библиотека для сериализации/десериализации JSON. |
+| **Room** | ORM для работы с локальной базой данных SQLite в KMP. |
+| **Okio** | Производительная библиотека для I/O операций, используется для распаковки архивов. |
+| **Multiplatform-Settings** | Библиотека для хранения простых key-value данных (настроек). |
+| **Ollama Client** | Интеграция с локальными языковыми моделями через Ollama (только Desktop). |
 
-## 2. Модели данных
+## 4. Анализ слоев
 
-Основные сущности приложения спроектированы для эффективного хранения и передачи данных между слоями.
+### 4.1. Слой представления (Presentation Layer)
 
-```mermaid
-classDiagram
-    class Prompt {
-        +String id
-        +String title
-        +String? description
-        +PromptContent content
-        +Map<String, String> variables
-        +List<String> compatibleModels
-        +String category
-        +List<String> tags
-        +Boolean isLocal
-        +Boolean isFavorite
-        +Float rating
-        +Int ratingVotes
-        +String status
-        +PromptMetadata metadata
-        +String version
-        +Date createdAt
-        +Date modifiedAt
-    }
+-   **UI:** Полностью написан на **Compose Material 3**.
+-   **Архитектура UI:** Применяется **MVI-подобный подход**.
+    -   **Component (Decompose):** `PromptListComponent` выступает в роли ViewModel, управляя сложным состоянием экрана (фильтры, сортировка, поиск) и обрабатывая многочисленные действия пользователя.
+    -   **State (`StateFlow`):** Компонент предоставляет `PromptsListState` для UI, обеспечивая однонаправленный поток данных.
+-   **Навигация:** Управляется **Decompose**.
 
-    class Chat {
-        +String id
-        +String name
-        +Long timestamp
-        +String lastMessage
-    }
+### 4.2. Слой бизнес-логики (Business Logic Layer)
 
-    class ModelDTO {
-        +String id
-        +String name
-        +Long contextLength
-        +toDomain() LlmModel
-    }
-```
+-   **Интеракторы (Use Cases):** Логика инкапсулирована в интеракторах (`IPromptsInteractor`, `ILLMInteractor`).
+-   **`SyncManager` (Новое):** Появился новый ключевой компонент `SyncManager`, который отвечает за **стратегию фоновой синхронизации**. Он решает, *когда* нужно проверять обновления, используя эффективный механизм сравнения хэшей коммитов, что значительно снижает сетевую нагрузку.
+-   **`PromptSynchronizer` (Улучшено):** Этот класс был переработан. Теперь он отвечает только за **процесс** синхронизации (скачивание, распаковка с помощью Okio, сохранение), делегируя принятие решений `SyncManager`. Также он теперь корректно обрабатывает промпты, удаленные из удаленного репозитория.
 
-## 3. Workflow бизнес-логики
+### 4.3. Слой данных (Data Layer)
 
-Процессы в приложении организованы через однонаправленный поток данных. Ниже представлен пример workflow для получения списка доступных LLM-моделей.
+-   **Репозитории:** Абстрагируют источники данных.
+-   **Сеть (Ktor):**
+    -   `GitHubService`: Скачивает zip-архив и получает хэш последнего коммита.
+    -   `OpenRouterService`: Взаимодействует с API OpenRouter.
+-   **База данных (Room):**
+    -   `PromptDao` предоставляет мощный API для CRUD-операций и сложной фильтрации.
+
+## 5. Ключевые сценарии взаимодействия
+
+### Сценарий 1: Интеллектуальная фоновая синхронизация (Новая архитектура)
+
+Этот сценарий показывает, как приложение эффективно проверяет наличие обновлений в фоне.
 
 ```mermaid
 sequenceDiagram
-    participant UI as UI Layer
-    participant Component as Screen Component
-    participant Interactor as LLMInteractor
-    participant Repository as OpenRouterRepository
-    participant API as OpenRouter API
+    participant App (Startup)
+    participant SyncManager
+    participant GitHubService
+    participant SettingsRepository
+    participant PromptSynchronizer
 
-    UI->>Component: Пользователь открывает экран
-    Component->>Interactor: getAvailableModels()
-    Interactor->>Repository: refreshModels()
-    Repository->>API: GET /api/v1/models
-    API-->>Repository: JSON с моделями (DTO)
-    Repository-->>Interactor: Результат (List<LlmModel>)
-    Interactor-->>Component: Обновляет StateFlow с моделями
-    Component-->>UI: StateFlow обновляет UI
+    App (Startup)->>SyncManager: syncIfNeeded()
+    SyncManager->>SettingsRepository: getLastCheckTimestamp()
+    alt Прошло меньше 24 часов
+        SettingsRepository-->>SyncManager: timestamp
+        SyncManager->>SyncManager: Пропустить проверку
+    else Прошло больше 24 часов
+        SettingsRepository-->>SyncManager: timestamp
+        SyncManager->>GitHubService: getLatestCommitHashForPath("prompts")
+        GitHubService-->>SyncManager: remoteHash
+        SyncManager->>SettingsRepository: getLastCommitHash()
+        SettingsRepository-->>SyncManager: localHash
+        alt Хэши совпадают
+            SyncManager->>SyncManager: Контент актуален, пропустить
+        else Хэши различаются
+            SyncManager->>PromptSynchronizer: synchronize()
+            PromptSynchronizer->>PromptSynchronizer: Скачивает, распаковывает, сохраняет
+            PromptSynchronizer-->>SyncManager: SyncResult.Success
+            SyncManager->>SettingsRepository: saveLastCommitHash(remoteHash)
+        end
+        SyncManager->>SettingsRepository: saveLastCheckTimestamp()
+    end
 ```
 
-## 4. Управление зависимостями
-
-Проект использует современные версии ключевых библиотек, что обеспечивает доступ к последним возможностям и улучшениям производительности.
+### Сценарий 2: Ручное обновление и фильтрация списка
 
 ```mermaid
-pie
-    title Основные зависимости
-    "Kotlin & Coroutines" : 25
-    "Compose Multiplatform" : 20
-    "Ktor Client" : 15
-    "Decompose" : 15
-    "Koin" : 10
-    "Room/SQLite" : 15
+sequenceDiagram
+    participant User
+    participant UI (PromptsScreen)
+    participant PromptListComponent
+    participant PromptsInteractor
+    participant PromptSynchronizer
+    participant Repository
+
+    User->>UI (PromptsScreen): Нажимает "Обновить"
+    UI (PromptsScreen)->>PromptListComponent: onRefresh()
+    PromptListComponent->>PromptsInteractor: synchronize()
+    PromptsInteractor->>PromptSynchronizer: synchronize()
+    PromptSynchronizer-->>PromptsInteractor: SyncResult.Success
+    PromptsInteractor-->>PromptListComponent: Готово
+    PromptListComponent->>PromptListComponent: loadPrompts()
+    PromptListComponent->>Repository: getPrompts()
+    Repository-->>PromptListComponent: Обновленный список
+    PromptListComponent->>PromptListComponent: applyFiltersAndSorting()
+    PromptListComponent-->>UI (PromptsScreen): Показывает обновленный и отфильтрованный список
 ```
 
-### Ключевые версии
-- **Kotlin**: `2.2.0`
-- **Compose Plugin**: `1.8.2`
-- **Ktor**: `3.1.3`
-- **Decompose**: `3.3.0`
-- **Room**: `2.7.2`
-- **Koin**: `4.0.4`
-- **KSP**: `2.2.0-2.0.2`
-- **Coroutines**: `1.10.2`
-- **Android compileSdk**: `35`
+## 6. Недавние архитектурные улучшения
 
-> **Примечание**: Использование актуальных версий требует строгого соблюдения [таблицы совместимости](https://github.com/JetBrains/compose-jb/blob/master/VERSIONING.md#kotlin-compatibility) (особенно для связки Kotlin и Compose).
+1.  **Интеллектуальная синхронизация:** Внедрение `SyncManager` с проверкой по хэшу коммита — это главное улучшение. Оно превращает наивную синхронизацию в эффективный и экономичный механизм.
+2.  **Четкое разделение ответственности:** Обязанности по синхронизации теперь четко разделены между `SyncManager` (стратегия), `PromptsInteractor` (API для UI) и `PromptSynchronizer` (исполнитель).
+3.  **Обработка удалений:** Синхронизация теперь корректно обрабатывает промпты, удаленные из репозитория, поддерживая консистентность локальной базы данных.
+4.  **Мощный UI:** `PromptListComponent` был значительно расширен для поддержки сложной фильтрации, сортировки и поиска, обеспечивая богатый пользовательский опыт.
+5.  **Использование Okio:** Переход на `Okio` для работы с zip-архивами — это технически грамотное решение, повышающее надежность и производительность I/O операций.
 
-## 5. Схема компонентов и особенности реализации
+## 7. Потенциальные улучшения
 
-### Полная схема компонентов
-```mermaid
-flowchart TD
-    subgraph Navigation
-        A(RootComponent)
-    end
-    subgraph Features
-        B(PromptListComponent)
-        C(PromptDetailComponent)
-    end
-    subgraph Domain
-        D(LLMInteractor)
-    end
-    subgraph Data
-        E(OpenRouterRepository)
-        F(ChatHistoryRepository)
-        G(KtorClient)
-        H(Room DAO)
-    end
-    
-    A --> B & C
-    B & C --> D
-    D --> E & F
-    E --> G
-    F --> H
-```
+1.  **Нормализация тегов:** Теги в `PromptEntity` по-прежнему хранятся в виде единой строки. Для более сложных запросов (например, "найти промпты с тегом A и тегом B") может потребоваться нормализация схемы с вынесением тегов в отдельную таблицу.
+2.  **Оптимизация фильтрации:** Текущая фильтрация происходит на стороне клиента в `applyFiltersAndSorting`. При очень большом количестве промптов это может стать неэффективным. В будущем можно рассмотреть перенос логики фильтрации на уровень базы данных, модифицировав запросы в `PromptDao`.
 
-### Особенности реализации
-- **Кросс-платформенный DI**: Внедрение зависимостей реализовано с помощью `Koin`. Платформенные реализации (например, драйвер БД или безопасное хранилище) предоставляются через механизм `expect/actual`, что позволяет сохранять общий DI-граф в `commonMain`.
-- **Сохраняемое состояние навигации**: Стек навигации Decompose сериализуется с помощью `kotlinx.serialization`, обеспечивая восстановление состояния экрана после закрытия приложения или смены конфигурации.
-- **Чистые модели данных**: Применена строгая граница между DTO (Data Transfer Objects) для сети и доменными моделями. Маппинг происходит на уровне репозитория (например, `ModelDTO.toDomain()`), что изолирует бизнес-логику от деталей реализации API.
+## 8. Заключение
 
-## 6. Рекомендации и дальнейшие шаги
-
-Для дальнейшего развития проекта рекомендуется сосредоточиться на следующих областях:
-
-1.  **Реализовать кэширование моделей LLM**: Добавить слой кэширования для списка моделей в `OpenRouterRepository` (с использованием `Room`), чтобы сократить количество сетевых запросов и ускорить запуск приложения.
-2.  **Завершить реализацию `IPromptSynchronizer`**: Реализовать логику фоновой синхронизации промптов из Git-репозитория, используя `Ktor` для скачивания и `Okio` для работы с архивом.
-3.  **Создать централизованный механизм обработки ошибок**: Внедрить единый механизм для отлова и обработки исключений на уровне интеракторов или репозиториев, чтобы предоставлять пользователю консистентные и понятные сообщения об ошибках.
-4.  **Покрытие кода тестами**: Начать написание модульных тестов для `Interactor` и `Repository`, используя mock-объекты для сетевых клиентов и DAO.
-5.  **Валидация данных**: Добавить валидацию для DTO на уровне сетевого слоя, чтобы защитить приложение от некорректных или неожиданных данных от API.
-
----
+Проект **AiPrompsKMP** демонстрирует значительный рост и зрелость архитектуры. Последние изменения, особенно введение интеллектуального `SyncManager`, показывают глубокое понимание проблем реального мира и стремление к созданию эффективного и надежного приложения. Архитектура остается чистой, масштабируемой и легко поддерживаемой. Выбор технологий актуален и соответствует лучшим практикам индустрии.

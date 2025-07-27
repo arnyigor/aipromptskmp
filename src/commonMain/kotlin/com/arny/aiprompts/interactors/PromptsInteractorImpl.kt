@@ -1,13 +1,15 @@
 package com.arny.aiprompts.interactors
 
-import com.arny.aiprompts.repositories.IPromptSynchronizer
-import com.arny.aiprompts.repositories.IPromptsRepository
 import com.arny.aiprompts.models.Prompt
 import com.arny.aiprompts.models.SyncResult
+import com.arny.aiprompts.repositories.IPromptSynchronizer
+import com.arny.aiprompts.repositories.IPromptsRepository
+import com.arny.aiprompts.repositories.ISyncSettingsRepository
 
 class PromptsInteractorImpl(
     private val repository: IPromptsRepository,
-    private val synchronizer: IPromptSynchronizer
+    private val synchronizer: IPromptSynchronizer,
+    private val settingsRepo: ISyncSettingsRepository
 ) : IPromptsInteractor {
     override suspend fun getPrompts(
         query: String,
@@ -25,6 +27,8 @@ class PromptsInteractorImpl(
         limit = limit
     )
 
+    override fun getGitHubToken(): String? = settingsRepo.getGitHubToken()
+
     override suspend fun getPromptById(id: String): Prompt? = repository.getPromptById(id)
 
     override suspend fun toggleFavorite(promptId: String) {
@@ -32,6 +36,10 @@ class PromptsInteractorImpl(
         if (prompt != null) {
             repository.updatePrompt(prompt.copy(isFavorite = !prompt.isFavorite))
         }
+    }
+
+    override suspend fun saveGitHubToken(string: String) {
+        settingsRepo.saveGitHubToken(string)
     }
 
     override suspend fun savePrompt(prompt: Prompt): Long = repository.insertPrompt(prompt)
